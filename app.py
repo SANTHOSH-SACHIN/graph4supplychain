@@ -466,7 +466,7 @@ def main():
     # Sidebar selection
     task = st.sidebar.selectbox(
         "Select Task",
-        ["Time Series Forecasting", "GNN Based Analysis"]
+        ["Time Series Forecasting", "GNN Based Analysis","Hybrid Model"]
     )
     
     if task == "Time Series Forecasting":
@@ -898,6 +898,56 @@ def main():
                 st.error(f"An error occurred during training: {str(e)}")
                 print(str(e))
 
+    elif task == "Hybrid Model":
+        st.subheader("Hybrid Model")
+        # Data source selection
+        data_source = st.sidebar.radio("Select Data Source", ["Local Directory", "Server"])
+        version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+
+        if data_source == "Local Directory":
+            st.sidebar.header("Local Directory Settings")
+            local_dir = st.sidebar.text_input("Enter local directory path", "./data/")
+            try:
+
+                parser = TemporalHeterogeneousGraphParser(
+                    base_url="", 
+                    version="", 
+                    headers={"accept": "application/json"}, 
+                    meta_data_path="./metadata.json", 
+                    use_local_files=True, 
+                    local_dir=local_dir+"/"+version+"/", 
+                    num_classes = 20)
+                st.sidebar.success("Successfully loaded local files!")
+            except Exception as e:
+                st.sidebar.error(f"Error loading local files: {str(e)}")
+                return
+                
+        else:  # Server
+            st.sidebar.header("Server Settings")
+            server_url = os.getenv("SERVER_URL")
+            # st.write(server_url)
+            
+            if server_url:
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+                try:
+                    parser = TemporalHeterogeneousGraphParser(
+                        base_url=server_url, 
+                        version=version, 
+                        headers={"accept": "application/json"}, 
+                        meta_data_path="./metadata.json", 
+                        use_local_files=False, 
+                        local_dir=local_dir+"/"+version+"/",  
+                        num_classes = 20
+                        )
+                    st.sidebar.success("Successfully connected to server!")
+                except Exception as e:
+                    st.sidebar.error(f"Error connecting to server: {str(e)}")
+                    return
+            else:
+                st.sidebar.warning("Please enter a server URL")
+                return
+                
+            
 # Run the main function
 if __name__ == "__main__":
     main()

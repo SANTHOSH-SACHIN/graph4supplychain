@@ -660,7 +660,32 @@ class TemporalHeterogeneousGraphParser:
         # st.write(temporal_graphs)
         return temporal_graphs, hetero_obj
         # return 0,1
+    def aggregate_part_features(self, part_id, agg_method="mean"):
+            complete_df = self.dfs
+            agg_functions = {
+                "mean": np.mean,
+                "sum": np.sum,
+                "min": np.min,
+                "max": np.max
+            }
+            
+            if agg_method not in agg_functions:
+                raise ValueError(f"Invalid aggregation method: {agg_method}. Choose from {list(agg_functions.keys())}.")
         
+            part_df = complete_df[part_id].copy()
+        
+            w_columns = [col for col in part_df.columns if col.startswith("W_")]
+            f_columns = [col for col in part_df.columns if col.startswith("F_")]
+        
+            part_df["W_agg"] = part_df[w_columns].apply(
+                lambda row: list(agg_functions[agg_method](np.array(row.tolist()), axis=0)), axis=1
+            )
+        
+            part_df["F_agg"] = part_df[f_columns].apply(
+                lambda row: list(agg_functions[agg_method](np.array(row.tolist()), axis=0)), axis=1
+            )
+            part_df = part_df.drop(columns=w_columns + f_columns)
+            return part_df
 # class Train:
 #     def __init__(self, G):
 #         """
