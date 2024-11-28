@@ -23,7 +23,7 @@ from datetime import timedelta
 
 
 class TemporalHeterogeneousGraphParser:
-    def __init__(self, base_url, version, headers,meta_data_path, use_local_files=False, local_dir="./",  num_classes =20):
+    def __init__(self, base_url, version, headers,meta_data_path="./data/metadata.json", use_local_files=False, local_dir="./",  num_classes =20):
         self.base_url = base_url
         self.version = version
         self.headers = headers
