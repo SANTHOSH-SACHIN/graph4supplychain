@@ -20,10 +20,10 @@ from torch_geometric.nn import to_hetero
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from torch_geometric.nn.conv import GATConv , SAGEConv
 from datetime import timedelta
-
+import copy
 
 class TemporalHeterogeneousGraphParser:
-    def __init__(self, base_url, version, headers,meta_data_path="./data/metadata.json", use_local_files=False, local_dir="./",  num_classes =20):
+    def __init__(self, base_url, version, headers,meta_data_path, use_local_files=False, local_dir=None,  num_classes =20):
         self.base_url = base_url
         self.version = version
         self.headers = headers
@@ -41,55 +41,74 @@ class TemporalHeterogeneousGraphParser:
 
         self.df = None
         self.df_date = None
+        self.df_dict={}
         
         if use_local_files and not local_dir:
             raise ValueError("Local directory must be specified when use_local_files is True.")
 
     def fetch_timestamps(self):
         if self.use_local_files:
-            file_path = self.meta_data_path
-            meta_data=''
-            if os.path.exists(file_path):
-                with open(file_path, 'r') as f:
-                    meta_data=json.load(f)
-            self.metadata = meta_data
-            self.timestamps = [i for i in range(1, meta_data['total_timestamps'])]
+            if os.path.exists(self.meta_data_path):
+                with open(self.meta_data_path, 'r') as f:
+                    self.metadata = json.load(f)
+                self.timestamps = list(range(1, self.metadata.get('total_timestamps', 0)))
+            else:
+                raise FileNotFoundError(f"Metadata file not found at {self.meta_data_path}")
         else:
-            # Fetch timestamps from the server
             schema_url = f"{self.base_url}/archive/schema/{self.version}"
             response = requests.get(schema_url, headers=self.headers, verify=False)
+            
             if response.status_code == 200:
                 self.timestamps = sorted(response.json())
-                
-                file_path = self.local_dir+'/metadata.json'
-                # fetch meta data from local
-                meta_data=''
-                if os.path.exists(file_path):
-                    with open(file_path, 'r') as f:
-                        meta_data=json.load(f)
-                self.metadata = meta_data
-                
             else:
-                raise Exception(f"Failed to retrieve timestamps: {response.status_code}")
+                raise Exception(f"Failed to retrieve timestamps: HTTP {response.status_code}")
+            if os.path.exists(self.meta_data_path):
+                with open(self.meta_data_path, 'r') as f:
+                    self.metadata = json.load(f)
+            else:
+                self.metadata = {}
+
+            version_dir = os.path.join(self.local_dir, self.version)
+            if os.path.exists(version_dir):
+                self.use_local_files = True
+            else:
+                self.download_version_files(version_dir)
+                self.use_local_files = True
 
     def fetch_json(self, timestamp):
         if self.use_local_files:
-            # Load JSON data from a local file
-            file_path = os.path.join(self.local_dir, f"{timestamp}.json")
+            file_path = os.path.join(self.local_dir, self.version, f"{timestamp}.json")
             if os.path.exists(file_path):
                 with open(file_path, 'r') as f:
                     return json.load(f)
             else:
                 raise FileNotFoundError(f"File for timestamp {timestamp} not found: {file_path}")
         else:
-            # Fetch JSON data from the server
             url = f"{self.base_url}/archive/schema/{self.version}/{timestamp}"
             response = requests.get(url, headers=self.headers, verify=False)
             if response.status_code == 200:
                 return response.json()
             else:
-                raise Exception(f"Failed to retrieve data for timestamp {timestamp}: {response.status_code}")
+                raise Exception(f"Failed to retrieve data for timestamp {timestamp}: HTTP {response.status_code}")
 
+
+    def download_version_files(self, version_dir):
+        os.makedirs(version_dir, exist_ok=True)
+        if not self.timestamps:
+            raise ValueError("Timestamps are not initialized. Ensure `fetch_timestamps` is called before downloading files.")
+
+        print(f"Downloading JSON files for version {self.version}...")
+        for timestamp in self.timestamps:
+            try:
+                data = self.fetch_json(timestamp)
+                file_path = os.path.join(version_dir, f"{timestamp}.json")
+                with open(file_path, 'w') as f:
+                    json.dump(data, f, indent=4)
+                print(f"Successfully downloaded and saved: {file_path}")
+            except Exception as e:
+                print(f"Failed to download or save data for timestamp {timestamp}: {e}")
+        print(f"All files for version {self.version} have been downloaded.")
+    
     def get_edge_index(self, edge_type, str):
         return self.edge_schema[edge_type].index(str)
 
@@ -106,22 +125,7 @@ class TemporalHeterogeneousGraphParser:
         return self.df
 
     def get_date_df(self):
-        partsdf = self.df_date
-        df = partsdf.map(parse_dates)
-        return df
-        
-    def parse_dates(self,x):
-        try:
-            if isinstance(x, str):
-                dates = x.strip('()').split(', ')
-                return pd.to_datetime(dates[0]), pd.to_datetime(dates[1])
-            elif isinstance(x, tuple):
-                return pd.to_datetime(x[0]), pd.to_datetime(x[1])
-            else:
-                return pd.NaT, pd.NaT
-        except Exception as e:
-            print(f"Error parsing {x}: {e}")
-            return pd.NaT, pd.NaT
+        return self.df_date
 
     def set_df(self, timestamp):
         base = pd.Timestamp(self.metadata['base_date'])  
@@ -162,11 +166,126 @@ class TemporalHeterogeneousGraphParser:
                     return (list(allowed_values.keys()).index(main_category) * 100 +sub_values.index(value) + 1) 
         elif isinstance(allowed_values, list) and value in allowed_values:
             return allowed_values.index(value)
-                
-        # Return -1 for unknown values
         return -1
 
-    def compute_demand(self, data):
+
+    def store_feat(self,data):
+        feat={}
+        for n_type, t in data['node_values'].items():
+            for n in t:
+                lis=[]
+                for i in (self.metadata['node_types'][n_type]):
+                    idx = self.get_node_index(n_type, i)
+                    if isinstance(n[idx], (int, float)):
+                        lis.append(n[idx])
+                feat[n[self.get_node_index(n_type, 'id')]] = lis
+        return feat    
+
+    def get_extended_df(self):
+        return self.dfs
+                
+    def set_extended_df(self, data_dict, type):
+        base_date = pd.Timestamp(self.metadata['base_date'])
+        edge_list={}
+        
+        df = self.df
+        
+        allowed_edges=[]
+        parts =[]
+
+        key_dict={}
+        feat={}
+
+        for i in data_dict[1]['node_values'][type]:
+            parts.append(i[self.get_node_index(type, 'id')])
+        
+        for edge_type in data_dict[1]['relationship_types']:
+            edge_split = re.split(r'To', edge_type)
+            if type in edge_split:
+                allowed_edges.append(edge_type)
+
+
+        for edge in data_dict[1]['link_values']:
+            e_type = edge[0]
+            if e_type in allowed_edges:
+                src = edge[self.get_edge_index(e_type, 'source')]
+                dst = edge[self.get_edge_index(e_type, 'target')]
+                if src in parts:
+                    if src in key_dict:
+                        key_dict[src].append(dst)
+                    else:
+                        key_dict[src] = [dst]
+                else:
+                    if dst in key_dict:
+                        key_dict[dst].append(src)
+                    else:
+                        key_dict[dst] = [src]
+
+        for ts, data in data_dict.items():
+            feat = self.store_feat(data)
+            lis={}
+            lis[ts]=[]
+            for i,j in key_dict.items():
+                lis[ts].append(feat[i])
+                for n in j:
+                    lis[ts].append(feat[n])
+                    
+        # Dictionary to store DataFrames for each `i`
+        dfs = {}
+        cols={}
+        for ts, data in data_dict.items():
+            feat = self.store_feat(data)
+            lis = {}
+            lis[ts] = []
+            date = (base_date + timedelta(days=ts)).strftime('%Y-%m-%d') 
+            
+            for i, j in key_dict.items():
+                if i not in dfs:
+                    dfs[i] = pd.DataFrame()
+                cols[i]=[i]
+                row_data = [feat[i]]
+                row_data.extend([feat[n] for n in j])
+                cols[i].extend(list(j))
+                lis[ts].extend(row_data)
+                dfs[i] = pd.concat(
+                    [dfs[i], pd.DataFrame([row_data], index=[date])], axis=0
+                )
+        for i, df in dfs.items():
+            if len(cols[i]) == df.shape[1]:
+                df.columns = cols[i]
+            else:
+                raise ValueError(f"Mismatch: cols[{i}] has {len(cols[i])} columns, but DataFrame has {df.shape[1]} columns.")
+        self.dfs=dfs
+
+    def multistep_data(self, temporal_graphs, out_steps):
+        timestamps = sorted(temporal_graphs.keys())
+        
+        for ts, graph in temporal_graphs.items():
+            graph = graph[1]
+        
+            for node_type in graph.node_types:
+                if 'y' in graph[node_type]: 
+                    num_nodes = graph[node_type]['y'].shape[0]
+                    original_dtype = graph[node_type]['y'].dtype
+                    temporal_y = torch.zeros((num_nodes, out_steps), 
+                                             device=graph[node_type]['y'].device, 
+                                             dtype=original_dtype)  # Retain the dtype
+    
+                    latest_y = graph[node_type]['y']
+                    for step in range(out_steps):
+                        next_ts = ts + step  
+                        if next_ts in temporal_graphs:
+                        
+                            next_graph = temporal_graphs[next_ts][1]
+                            if 'y' in next_graph[node_type]:
+                                latest_y = next_graph[node_type]['y']
+                        
+                        temporal_y[:, step] = latest_y.squeeze(-1)
+                    graph[node_type]['y'] = temporal_y
+        
+        return temporal_graphs
+
+    def compute_demand(self, data, threshold):
         po_demand={}
         facility_demand={}
         facility_external_demand={}
@@ -181,7 +300,7 @@ class TemporalHeterogeneousGraphParser:
             if edge[self.get_edge_index("FACILITYToPRODUCT_OFFERING", 'relationship_type')] == "FACILITYToPRODUCT_OFFERING":
                 target_ind = self.get_edge_index("FACILITYToPRODUCT_OFFERING", 'target')
                 source_ind = self.get_edge_index("FACILITYToPRODUCT_OFFERING", 'source')
-                po_demand[edge[target_ind]][1]+=1
+                po_demand[edge[target_ind]][2]+=1
 
                 source = edge[source_ind]
 
@@ -200,27 +319,33 @@ class TemporalHeterogeneousGraphParser:
                 else:
                     edges_2[edge[source_ind]] = edge
                     
+        bottle_neck={}
+        
         for facility in data['node_values']['FACILITY']:
             if facility[self.get_node_index('FACILITY','type')] == "lam":
                 id = facility[self.get_node_index('FACILITY','id')]
                 target = edges[id][self.get_edge_index('FACILITYToPRODUCT_OFFERING', 'target')]
-                po_demand[target][2]+= facility[self.get_node_index('FACILITY','max_capacity')]
+                po_demand[target][1]+= facility[self.get_node_index('FACILITY','max_capacity')]
 
         for facility in data['node_values']['FACILITY']:
             if facility[self.get_node_index('FACILITY','type')] == "lam":
                 id = facility[self.get_node_index('FACILITY','id')]
                 target = edges[id][self.get_edge_index('FACILITYToPRODUCT_OFFERING', 'target')]
-                facility_demand[id] = (po_demand[target][0]/po_demand[target][2])*facility[self.get_node_index('FACILITY','max_capacity')]
-
+                dem = (po_demand[target][0]/po_demand[target][1])*facility[self.get_node_index('FACILITY','max_capacity')]
+                facility_demand[id] = dem
+                if po_demand[target][0]/po_demand[target][2] > dem + threshold:
+                    bottle_neck[id] = 1
+                else:
+                    bottle_neck[id] = 0
 
         for edge in data['link_values']:
             if edge[self.get_edge_index("PARTSToFACILITY", 'relationship_type')] == "PARTSToFACILITY":
                 if edge[self.get_edge_index("PARTSToFACILITY", 'target')] in facility_demand:
                     src = edge[self.get_edge_index("PARTSToFACILITY", 'source')]
                     if src in sa_demand:
-                        sa_demand[src] += [edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]], 0]
+                        sa_demand[src] += [edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]], 0, 0]
                     else:
-                        sa_demand[src] = [edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]], 0]
+                        sa_demand[src] = [edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]], 0, 0]
                     
 
         list_pop=[]
@@ -237,6 +362,7 @@ class TemporalHeterogeneousGraphParser:
                 target = edges_2[id][self.get_edge_index('FACILITYToPARTS', 'target')]
                 if target in sa_demand:
                     sa_demand[target][1] += facility[self.get_node_index('FACILITY','max_capacity')]
+                    sa_demand[target][2] += 1
                 else:
                     if target not in list_pop:
                         list_pop.append(target)
@@ -253,7 +379,12 @@ class TemporalHeterogeneousGraphParser:
                     if id not in list_pop:
                         list_pop.append(id)
                 else:
-                    facility_external_demand[id] =  (sa_demand[target][0]/  sa_demand[target][1])* facility[self.get_node_index('FACILITY','max_capacity')]
+                    dem =  (sa_demand[target][0]/  sa_demand[target][1])* facility[self.get_node_index('FACILITY','max_capacity')]
+                    facility_external_demand[id] = dem
+                    if sa_demand[target][0]/  sa_demand[target][2] > dem + threshold:
+                        bottle_neck[id] = 1
+                    else:
+                        bottle_neck[id] = 0
         
         for edge in data['link_values']:
             if edge[self.get_edge_index("PARTSToFACILITY", 'relationship_type')] == "PARTSToFACILITY":
@@ -275,11 +406,12 @@ class TemporalHeterogeneousGraphParser:
             demand[key] = val
         
         self.demand = demand
+        self.bottle_neck = bottle_neck
         self.list_pop = list_pop
 
 
 
-    def parse_json_to_graph(self, data, timestamp, regression):
+    def parse_json_to_graph(self, data, timestamp, regression, multistep, task):
         hetero_data = HeteroData()
         graph_nx = nx.DiGraph() if data['directed'] else nx.Graph()
         
@@ -316,21 +448,28 @@ class TemporalHeterogeneousGraphParser:
                 c += 1
 
                 n_feat.append([attr_dict[i] if isinstance(attr_dict[i], (int, float)) else self.encode_categorical_value(node_type+'_'+i, attr_dict[i]) for i in trim_attributes])
-                
-                if node_type == 'PARTS':
-                    if regression:
-                        y.append(self.demand[node_id])
-                    else:
-                        y.append(self.get_y(self.demand[node_id]))
-                    
+
+                if task=='df':
+                    if node_type == 'PARTS':
+                        if regression:
+                            y.append(self.demand[node_id])
+                        else:
+                            y.append(self.get_y(self.demand[node_id]))
+                elif task=='bd':
+                    if node_type == 'FACILITY':
+                        y.append(self.bottle_neck[node_id])
             
             hetero_data[node_type].node_id = n_id
             hetero_data[node_type].x = torch.tensor(n_feat, dtype=torch.float)
-            if node_type == 'PARTS':
-                if regression:
+            if task=='df':
+                if node_type == 'PARTS':
+                    if regression:
+                        hetero_data[node_type].y = torch.tensor(y, dtype=torch.float)
+                    else:
+                        hetero_data[node_type].y = torch.tensor(y, dtype=torch.long)
+            elif task=='bd':
+                if node_type == 'FACILITY':
                     hetero_data[node_type].y = torch.tensor(y, dtype=torch.float)
-                else:
-                    hetero_data[node_type].y = torch.tensor(y, dtype=torch.long)
 
             node_features[node_type] = torch.tensor(n_feat, dtype=torch.float)
             label[node_type] = torch.tensor(y, dtype=torch.long)
@@ -473,273 +612,284 @@ class TemporalHeterogeneousGraphParser:
                 return class_index
         return len(self.class_ranges) - 1
 
-    def create_temporal_graph(self,regression, in_steps = 5, out_steps = 3):
+    def create_temporal_graph(self,regression=False, multistep = True, out_steps = 2, task = 'df', threshold=10):
         self.fetch_timestamps()
         temporal_graphs = {}
         first_timestamp = True
+        json={}
+        demand={}
         
         for timestamp in self.timestamps:
             data = self.fetch_json(timestamp)
             
             self.node_schema = data["node_types"]
             self.edge_schema = data["relationship_types"]
-            
+        
             self.set_date_df(timestamp, data)
-            # data = self.preprocess(data)
-
-            self.compute_demand(data)
+            json[timestamp] = data
+            
+            
+            data = self.preprocess(data)
+            self.compute_demand(data, threshold)
+            demand[timestamp] = self.demand
             
             if first_timestamp:
                 self.create_classes(self.num_classes, self.demand)
                 first_timestamp = False
             
-            graph_nx, hetero_data = self.parse_json_to_graph(data, timestamp, regression)
+            graph_nx, hetero_data = self.parse_json_to_graph(data, timestamp, regression, multistep, task)
             
             hetero_data = self.add_dummy_edge(hetero_data, "WAREHOUSE", "To", "SUPPLIERS")
             hetero_data = self.add_dummy_edge(hetero_data, "PRODUCT_FAMILY", "To", "BUSINESS_GROUP")
             
             hetero_data = self.set_dict_values(hetero_data)
-            hetero_data = self.set_mask(hetero_data, 'PARTS')
+            if task =='df':
+                hetero_data = self.set_mask(hetero_data, 'PARTS')
+            else:
+                hetero_data = self.set_mask(hetero_data, 'FACILITY')
             temporal_graphs[timestamp] = (graph_nx, hetero_data)
 
             self.set_df(timestamp)
 
-        hetero_obj = self.to_hetero_data()
-        return temporal_graphs, temporal_graphs
-
-    def to_hetero_data(self):
-        pass
-
-
-class Train:
-    def __init__(self, G):
-        """
-        Initializes the Train class with metadata from the input graph.
+        self.set_extended_df(json, 'PARTS')
+        hetero_list = copy.deepcopy(temporal_graphs)
+        if multistep:
+            hetero_obj = self.multistep_data(hetero_list, out_steps)
+        else:
+            hetero_obj = temporal_graphs
+        # st.write(temporal_graphs)
+        return temporal_graphs, hetero_obj
+        # return 0,1
         
-        Args:
-            G: Input graph object, expected to have a metadata method.
-        """
-        self.metadata = G.metadata()
-        self.model = None
-        self.G = G
-
-    def set_model(self, hidden_channels=64, out_channels=20, layer_config=None):
-        """
-        Configures the model with the given parameters and converts it to a heterogeneous model.
+# class Train:
+#     def __init__(self, G):
+#         """
+#         Initializes the Train class with metadata from the input graph.
         
-        Args:
-            hidden_channels: Default number of hidden channels (can be overridden by layer config)
-            out_channels: Number of output channels for the final layer
-            layer_config: Dictionary of layer configurations in the format:
-                {
-                    'layer1': {
-                        'class': LayerClass,
-                        'params': {
-                            'heads': 4,
-                            'dropout': 0.2,
-                            ...
-                        }
-                    },
-                    'layer2': {
-                        ...
-                    }
-                }
-        """
-        if layer_config is None or len(layer_config) < 2:
-            raise ValueError("layer_config must contain at least two layers.")
-        
-        self.hidden_channels = hidden_channels
-        self.out_channels = out_channels
-        self.layer_config = layer_config
+#         Args:
+#             G: Input graph object, expected to have a metadata method.
+#         """
+#         self.metadata = G.metadata()
+#         self.model = None
+#         self.G = G
 
-        class GNN_NodeClassification(torch.nn.Module):
-            def __init__(self, hidden_channels, out_channels, layer_config):
-                super().__init__()
+#     def set_model(self, hidden_channels=64, out_channels=20, layer_config=None):
+#         """
+#         Configures the model with the given parameters and converts it to a heterogeneous model.
+        
+#         Args:
+#             hidden_channels: Default number of hidden channels (can be overridden by layer config)
+#             out_channels: Number of output channels for the final layer
+#             layer_config: Dictionary of layer configurations in the format:
+#                 {
+#                     'layer1': {
+#                         'class': LayerClass,
+#                         'params': {
+#                             'heads': 4,
+#                             'dropout': 0.2,
+#                             ...
+#                         }
+#                     },
+#                     'layer2': {
+#                         ...
+#                     }
+#                 }
+#         """
+#         if layer_config is None or len(layer_config) < 2:
+#             raise ValueError("layer_config must contain at least two layers.")
+        
+#         self.hidden_channels = hidden_channels
+#         self.out_channels = out_channels
+#         self.layer_config = layer_config
+
+#         class GNN_NodeClassification(torch.nn.Module):
+#             def __init__(self, hidden_channels, out_channels, layer_config):
+#                 super().__init__()
                 
-                # Dynamically create layers with their specific configurations
-                self.layers = torch.nn.ModuleList()
-                layer_keys = list(layer_config.keys())
+#                 # Dynamically create layers with their specific configurations
+#                 self.layers = torch.nn.ModuleList()
+#                 layer_keys = list(layer_config.keys())
                 
-                for i, layer_key in enumerate(layer_keys):
-                    layer_spec = layer_config[layer_key]
-                    layer_class = layer_spec['class']
-                    layer_params = layer_spec.get('params', {})
+#                 for i, layer_key in enumerate(layer_keys):
+#                     layer_spec = layer_config[layer_key]
+#                     layer_class = layer_spec['class']
+#                     layer_params = layer_spec.get('params', {})
                     
-                    # Set input/output dimensions based on position
-                    if i == 0:  # First layer
-                        layer_params['in_channels'] = (-1, -1)
-                        layer_params['out_channels'] = hidden_channels
-                    elif i == len(layer_keys) - 1:  # Last layer
-                        layer_params['in_channels'] = (-1, -1)
-                        layer_params['out_channels'] = out_channels
-                    else:  # Hidden layers
-                        layer_params['in_channels'] = (-1, -1)
-                        layer_params['out_channels'] = hidden_channels
+#                     # Set input/output dimensions based on position
+#                     if i == 0:  # First layer
+#                         layer_params['in_channels'] = (-1, -1)
+#                         layer_params['out_channels'] = hidden_channels
+#                     elif i == len(layer_keys) - 1:  # Last layer
+#                         layer_params['in_channels'] = (-1, -1)
+#                         layer_params['out_channels'] = out_channels
+#                     else:  # Hidden layers
+#                         layer_params['in_channels'] = (-1, -1)
+#                         layer_params['out_channels'] = hidden_channels
                     
-                    # Create layer instance with configured parameters
-                    self.layers.append(layer_class(**layer_params))
+#                     # Create layer instance with configured parameters
+#                     self.layers.append(layer_class(**layer_params))
 
-            def forward(self, x, edge_index):
-                for layer in self.layers[:-1]:
-                    # Apply layer with activation
-                    x = layer(x, edge_index)
-                    if isinstance(x, tuple):  # Handle multi-head output (e.g., from GAT)
-                        x = x[0]
-                    x = x.relu()
+#             def forward(self, x, edge_index):
+#                 for layer in self.layers[:-1]:
+#                     # Apply layer with activation
+#                     x = layer(x, edge_index)
+#                     if isinstance(x, tuple):  # Handle multi-head output (e.g., from GAT)
+#                         x = x[0]
+#                     x = x.relu()
                 
-                # Final layer without activation
-                x = self.layers[-1](x, edge_index)
-                if isinstance(x, tuple):
-                    x = x[0]
-                return x
+#                 # Final layer without activation
+#                 x = self.layers[-1](x, edge_index)
+#                 if isinstance(x, tuple):
+#                     x = x[0]
+#                 return x
 
-        model = GNN_NodeClassification(hidden_channels, out_channels, layer_config)
-        self.model = to_hetero(model, self.metadata, aggr='sum')
+#         model = GNN_NodeClassification(hidden_channels, out_channels, layer_config)
+#         self.model = to_hetero(model, self.metadata, aggr='sum')
     
-    def train(self, num_epochs, optimizer, loss, label, patience=5):
-        """
-        Trains the model while monitoring validation loss to prevent overfitting.
+#     def train(self, num_epochs, optimizer, loss, label, patience=5):
+#         """
+#         Trains the model while monitoring validation loss to prevent overfitting.
         
-        Args:
-            num_epochs: Number of epochs to train.
-            optimizer: Optimizer for updating model parameters.
-            loss: Loss function.
-            label: The label node type for which the training mask and target are applied.
-            patience: Number of epochs to wait for validation loss improvement before early stopping.
-        """
-        if self.model is None:
-            raise ValueError("Model has not been set. Use set_model() before training.")
+#         Args:
+#             num_epochs: Number of epochs to train.
+#             optimizer: Optimizer for updating model parameters.
+#             loss: Loss function.
+#             label: The label node type for which the training mask and target are applied.
+#             patience: Number of epochs to wait for validation loss improvement before early stopping.
+#         """
+#         if self.model is None:
+#             raise ValueError("Model has not been set. Use set_model() before training.")
         
-        # Initialize loss tracking
-        self.train_losses = []
-        self.test_losses = []
-        best_test_loss = float('inf')
-        patience_counter = 0
-        best_model_state = None
+#         # Initialize loss tracking
+#         self.train_losses = []
+#         self.test_losses = []
+#         best_test_loss = float('inf')
+#         patience_counter = 0
+#         best_model_state = None
         
-        for epoch in range(num_epochs):
-            # Training phase
-            self.model.train()
-            optimizer.zero_grad()
+#         for epoch in range(num_epochs):
+#             # Training phase
+#             self.model.train()
+#             optimizer.zero_grad()
             
-            # Forward pass
-            out = self.model(self.G.x_dict, self.G.edge_index_dict)
+#             # Forward pass
+#             out = self.model(self.G.x_dict, self.G.edge_index_dict)
             
-            # Get training masks and compute predictions
-            train_mask = self.G[label]['train_mask']
-            y_train_true = self.G[label].y[train_mask].cpu().numpy()
-            y_train_pred = out[label][train_mask].argmax(dim=1).cpu().numpy()
+#             # Get training masks and compute predictions
+#             train_mask = self.G[label]['train_mask']
+#             y_train_true = self.G[label].y[train_mask].cpu().numpy()
+#             y_train_pred = out[label][train_mask].argmax(dim=1).cpu().numpy()
             
-            # Compute training loss and backpropagate
-            train_loss = loss(out[label][train_mask], self.G[label].y[train_mask])
-            train_loss.backward()
-            optimizer.step()
+#             # Compute training loss and backpropagate
+#             train_loss = loss(out[label][train_mask], self.G[label].y[train_mask])
+#             train_loss.backward()
+#             optimizer.step()
             
-            # Calculate training metrics
-            train_accuracy = accuracy_score(y_train_true, y_train_pred)
-            self.train_losses.append(float(train_loss))
+#             # Calculate training metrics
+#             train_accuracy = accuracy_score(y_train_true, y_train_pred)
+#             self.train_losses.append(float(train_loss))
             
-            # Testing phase
-            self.model.eval()
-            with torch.no_grad():
-                # Get test masks and compute predictions
-                test_mask = self.G[label]['test_mask']
-                y_test_true = self.G[label].y[test_mask].cpu().numpy()
-                y_test_pred = out[label][test_mask].argmax(dim=1).cpu().numpy()
+#             # Testing phase
+#             self.model.eval()
+#             with torch.no_grad():
+#                 # Get test masks and compute predictions
+#                 test_mask = self.G[label]['test_mask']
+#                 y_test_true = self.G[label].y[test_mask].cpu().numpy()
+#                 y_test_pred = out[label][test_mask].argmax(dim=1).cpu().numpy()
                 
-                # Compute test loss and accuracy
-                test_loss = loss(out[label][test_mask], self.G[label].y[test_mask])
-                test_accuracy = accuracy_score(y_test_true, y_test_pred)
-                self.test_losses.append(float(test_loss))
+#                 # Compute test loss and accuracy
+#                 test_loss = loss(out[label][test_mask], self.G[label].y[test_mask])
+#                 test_accuracy = accuracy_score(y_test_true, y_test_pred)
+#                 self.test_losses.append(float(test_loss))
                 
-                # Early stopping check
-                if test_loss < best_test_loss:
-                    best_test_loss = test_loss
-                    patience_counter = 0
-                    # Save best model state
-                    best_model_state = {key: value.cpu().clone() for key, value in self.model.state_dict().items()}
-                else:
-                    patience_counter += 1
-                    if patience_counter >= patience:
-                        print(f"Early stopping triggered at epoch {epoch + 1}")
-                        # Restore best model state
-                        self.model.load_state_dict(best_model_state)
-                        break
+#                 # Early stopping check
+#                 if test_loss < best_test_loss:
+#                     best_test_loss = test_loss
+#                     patience_counter = 0
+#                     # Save best model state
+#                     best_model_state = {key: value.cpu().clone() for key, value in self.model.state_dict().items()}
+#                 else:
+#                     patience_counter += 1
+#                     if patience_counter >= patience:
+#                         print(f"Early stopping triggered at epoch {epoch + 1}")
+#                         # Restore best model state
+#                         self.model.load_state_dict(best_model_state)
+#                         break
             
-            # Print epoch metrics
-            print(f"Epoch {epoch + 1}/{num_epochs}")
-            print(f"Train Loss: {float(train_loss):.4f}, Train Accuracy: {train_accuracy:.4f}")
-            print(f"Test Loss: {float(test_loss):.4f}, Test Accuracy: {test_accuracy:.4f}")
-            print("-" * 50)
+#             # Print epoch metrics
+#             print(f"Epoch {epoch + 1}/{num_epochs}")
+#             print(f"Train Loss: {float(train_loss):.4f}, Train Accuracy: {train_accuracy:.4f}")
+#             print(f"Test Loss: {float(test_loss):.4f}, Test Accuracy: {test_accuracy:.4f}")
+#             print("-" * 50)
         
-        # Final model evaluation
-        self.model.eval()
-        with torch.no_grad():
-            final_out = self.model(self.G.x_dict, self.G.edge_index_dict)
-            test_mask = self.G[label]['test_mask']
-            final_test_loss = float(loss(final_out[label][test_mask], self.G[label].y[test_mask]))
-            final_pred = final_out[label][test_mask].argmax(dim=1).cpu().numpy()
-            final_accuracy = accuracy_score(self.G[label].y[test_mask].cpu().numpy(), final_pred)
+#         # Final model evaluation
+#         self.model.eval()
+#         with torch.no_grad():
+#             final_out = self.model(self.G.x_dict, self.G.edge_index_dict)
+#             test_mask = self.G[label]['test_mask']
+#             final_test_loss = float(loss(final_out[label][test_mask], self.G[label].y[test_mask]))
+#             final_pred = final_out[label][test_mask].argmax(dim=1).cpu().numpy()
+#             final_accuracy = accuracy_score(self.G[label].y[test_mask].cpu().numpy(), final_pred)
             
-            print("\nTraining Complete!")
-            print(f"Final Test Loss: {final_test_loss:.4f}")
-            print(f"Final Test Accuracy: {final_accuracy:.4f}")
+#             print("\nTraining Complete!")
+#             print(f"Final Test Loss: {final_test_loss:.4f}")
+#             print(f"Final Test Accuracy: {final_accuracy:.4f}")
             
-        return {
-            'train_losses': self.train_losses,
-            'test_losses': self.test_losses,
-            'final_test_loss': final_test_loss,
-            'final_accuracy': final_accuracy,
-            'best_model_state': best_model_state
-        }
-    def test(self, loss, label="PRODUCT_OFFERING"):
-        if self.model is None:
-            raise ValueError("Model has not been set. Use set_model() before testing.")
+#         return {
+#             'train_losses': self.train_losses,
+#             'test_losses': self.test_losses,
+#             'final_test_loss': final_test_loss,
+#             'final_accuracy': final_accuracy,
+#             'best_model_state': best_model_state
+#         }
+#     def test(self, loss, label="PRODUCT_OFFERING"):
+#         if self.model is None:
+#             raise ValueError("Model has not been set. Use set_model() before testing.")
         
-        self.model.eval()
-        with torch.no_grad():
-            out = self.model(self.G.x_dict, self.G.edge_index_dict)
-            mask = self.G[label]['test_mask']  # Use 'test_mask' for testing
-            y_true = self.G[label].y[mask].cpu().numpy()
-            y_pred = out[label][mask].argmax(dim=1).cpu().numpy()
+#         self.model.eval()
+#         with torch.no_grad():
+#             out = self.model(self.G.x_dict, self.G.edge_index_dict)
+#             mask = self.G[label]['test_mask']  # Use 'test_mask' for testing
+#             y_true = self.G[label].y[mask].cpu().numpy()
+#             y_pred = out[label][mask].argmax(dim=1).cpu().numpy()
         
-            test_loss = loss(out[label][mask], self.G[label].y[mask])
+#             test_loss = loss(out[label][mask], self.G[label].y[mask])
         
-            accuracy = accuracy_score(y_true, y_pred)
-            precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-            recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-            f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
+#             accuracy = accuracy_score(y_true, y_pred)
+#             precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
+#             recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
+#             f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
         
-            print(f"Test Loss: {test_loss:.4f}, "
-                f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, "
-                f"Recall: {recall:.4f}, F1-Score: {f1:.4f}")
+#             print(f"Test Loss: {test_loss:.4f}, "
+#                 f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, "
+#                 f"Recall: {recall:.4f}, F1-Score: {f1:.4f}")
         
-            metrics = {
-                'test_loss': test_loss.item(),
-                'accuracy': accuracy,
-                'precision': precision,
-                'recall': recall,
-                'f1': f1
-            }
+#             metrics = {
+#                 'test_loss': test_loss.item(),
+#                 'accuracy': accuracy,
+#                 'precision': precision,
+#                 'recall': recall,
+#                 'f1': f1
+#             }
         
-            return metrics
+#             return metrics
 
 
-    def analytics(self, data_loader):
-        """
-        Evaluates the model on the provided data loader and generates analytics.
+#     def analytics(self, data_loader):
+#         """
+#         Evaluates the model on the provided data loader and generates analytics.
         
-        Args:
-            data_loader: A PyTorch DataLoader for loading the evaluation data.
-        """
-        if self.model is None:
-            raise ValueError("Model has not been set. Use set_model() before analytics.")
+#         Args:
+#             data_loader: A PyTorch DataLoader for loading the evaluation data.
+#         """
+#         if self.model is None:
+#             raise ValueError("Model has not been set. Use set_model() before analytics.")
         
-        self.model.eval()
-        with torch.no_grad():
-            for data in data_loader:
-                out = self.model(data.x_dict, data.edge_index_dict)
-                print("Output:", out)
+#         self.model.eval()
+#         with torch.no_grad():
+#             for data in data_loader:
+#                 out = self.model(data.x_dict, data.edge_index_dict)
+#                 print("Output:", out)
                 
                 
 

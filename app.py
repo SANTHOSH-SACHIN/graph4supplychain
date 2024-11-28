@@ -10,7 +10,7 @@ import os
 import requests
 import warnings
 warnings.filterwarnings('ignore')
-
+import copy
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -21,7 +21,7 @@ from sarima_st import SingleStepSarimaAnalyzer, MultiStepSarimaAnalyzer
 from cnnlstm_st import SingleStepCNNLSTMAnalyzer
 from xgboost_st import XGBoostForecaster
 from prophet_st import SingleStepProphet, MultiStepProphet
-from parser_st import TemporalHeterogeneousGraphParser, Train
+from parser_st import TemporalHeterogeneousGraphParser
 
 # GNN models
 from torch_geometric.data import HeteroData
@@ -94,7 +94,7 @@ class GNNEncoder3(torch.nn.Module):
         return x
 
 class GRUDecoder(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, num_parts=500, hidden_gru=64):
+    def __init__(self, in_channels, out_channels, num_parts, hidden_gru=64):
         super().__init__()
         hidden_layers = [128, 64, 32]
         
@@ -125,7 +125,7 @@ class GRUDecoder(torch.nn.Module):
         return torch.stack(outputs)
 
 class Model3(torch.nn.Module):
-    def __init__(self, hidden_channels, out_channels, num_parts=500, G=None):
+    def __init__(self, hidden_channels, out_channels, num_parts, G=None):
         super().__init__()
         # Dynamically choose encoder based on user configuration
         self.encoder_type = st.session_state.get('encoder_type', 'SAGEConv')
@@ -354,26 +354,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# DataSourceManager class (from time series code)
-class DataSourceManager:
-    @staticmethod
-    def load_local_files(local_dir: str, metadata_filename: str = "metadata.json"):
-        """Load files from local directory"""
-        metadata_path = os.path.join(local_dir, metadata_filename)
-        
-        if not os.path.exists(metadata_path):
-            raise FileNotFoundError(f"Metadata file not found at {metadata_path}")
-            
-        # Read metadata
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
-            
-        return metadata_path
+
 
 class StreamlitTimeSeriesAnalyzer:
     def __init__(self, metadata_path: str = None, server_url: str = None, headers: Dict = None):
         """Initialize all forecasting models"""
-        self.metadata_path ="./data/metadata.json"
+        self.metadata_path ="./metadata.json"
         self.server_url = server_url
         self.headers = {"accept": "application/json"}
 
@@ -488,21 +474,21 @@ def main():
         
         # Data source selection
         data_source = st.sidebar.radio("Select Data Source", ["Local Directory", "Server"])
-        
+        version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+
         if data_source == "Local Directory":
             st.sidebar.header("Local Directory Settings")
             local_dir = st.sidebar.text_input("Enter local directory path", "./data/")
-            
             try:
-                metadata_path = DataSourceManager.load_local_files(local_dir)
+
                 parser = TemporalHeterogeneousGraphParser(
-                    base_url="",
-                    version="",
-                    headers = {"accept": "application/json"},
-                    meta_data_path="./data/metadata.json",
-                    use_local_files=True,
-                    local_dir=local_dir
-                )
+                    base_url="", 
+                    version="", 
+                    headers={"accept": "application/json"}, 
+                    meta_data_path="./metadata.json", 
+                    use_local_files=True, 
+                    local_dir=local_dir+"/"+version+"/", 
+                    num_classes = 20)
                 st.sidebar.success("Successfully loaded local files!")
             except Exception as e:
                 st.sidebar.error(f"Error loading local files: {str(e)}")
@@ -510,17 +496,21 @@ def main():
                 
         else:  # Server
             st.sidebar.header("Server Settings")
-            server_url = st.sidebar.text_input("Enter server URL")
+            server_url = os.getenv("SERVER_URL")
+            # st.write(server_url)
             
             if server_url:
-                version = st.sidebar.text_input("Enter Version of the fetch",key="version")
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
                 try:
                     parser = TemporalHeterogeneousGraphParser(
-                        base_url=server_url,
-                        version=version,
-                        headers = {"accept": "application/json"},
-                        use_local_files=False,
-                    )
+                        base_url=server_url, 
+                        version=version, 
+                        headers={"accept": "application/json"}, 
+                        meta_data_path="./metadata.json", 
+                        use_local_files=False, 
+                        local_dir=local_dir+"/"+version+"/",  
+                        num_classes = 20
+                        )
                     st.sidebar.success("Successfully connected to server!")
                 except Exception as e:
                     st.sidebar.error(f"Error connecting to server: {str(e)}")
@@ -532,13 +522,13 @@ def main():
         # Create temporal graph and get demand DataFrame
         try:
             with st.spinner("Loading and processing data..."):
-                temporal_graphs, hetero_obj = parser.create_temporal_graph(regression=False)
+                temporal_graphs, hetero_obj =parser.create_temporal_graph(regression = False, out_steps = 3, multistep = False, task = 'df', threshold=10)
                 demand_df = parser.get_df()
                 demand_df.index = pd.to_datetime(demand_df.index)
                 
                 # Initialize analyzer
                 analyzer = StreamlitTimeSeriesAnalyzer(
-                    metadata_path=metadata_path if data_source == "Local Directory" else None,
+                    metadata_path="./metadata.json" if data_source == "Local Directory" else None,
                     server_url=server_url if data_source == "Server" else None,
                     headers = {"accept": "application/json"} if data_source == "Server" else None
                 )
@@ -681,7 +671,7 @@ def main():
     elif task == "GNN Based Analysis":
         st.subheader("Graph Neural Network Training Interface")
         # Model Configuration Section
-        metadata_path = ""
+
         with st.sidebar.expander("🎯 Task Configuration", expanded=True):
             task_type = st.radio("Select Task Type", 
                                 ["Classification", "Regression"], 
@@ -741,13 +731,13 @@ def main():
                 help="Number of hidden channels in the graph neural network"
             )
             
-            num_parts = st.number_input(
-                "Number of Parts", 
-                min_value=10, 
-                max_value=1000, 
-                value=500,
-                help="Number of parts for the GRU Decoder"
-            )
+            # num_parts = st.number_input(
+            #     "Number of Parts", 
+            #     min_value=10, 
+            #     max_value=1000, 
+            #     value=500,
+            #     help="Number of parts for the GRU Decoder"
+            # )
             
             num_epochs = st.number_input(
                 "Number of Epochs", 
@@ -777,12 +767,11 @@ def main():
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=False)
-            metadata_path = ""
+            # metadata_path = ""
             
             if use_local_files:
-                local_dir = st.text_input("Local Directory Path", "./")
-                # Assume you have a method to load local files
-                metadata_path = DataSourceManager.load_local_files(local_dir)
+                local_dir = st.text_input("Local Directory Path", "./data")
+  
         
         # Start Training Button
         train_button = st.sidebar.button("🚀 Start Training")
@@ -791,7 +780,7 @@ def main():
             try:
                 # Initialize parser and create temporal graph
                 base_url = os.getenv("SERVER_URL")
-                version = "NSS_1000_12"
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
                 headers = {"accept": "application/json"}
                 
                 parser = TemporalHeterogeneousGraphParser(
@@ -800,12 +789,12 @@ def main():
                     headers = {"accept": "application/json"},
                     meta_data_path="metadata.json",
                     use_local_files=use_local_files,
-                    local_dir="./data/"
+                    local_dir=local_dir+"/", 
                 )
                 
                 # Create temporal graphs based on task type
                 regression_flag = True if st.session_state.task_type == "Regression" else False
-                temporal_graphs, hetero_obj = parser.create_temporal_graph(regression=regression_flag)
+                temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = regression_flag, out_steps = 3, multistep = False, task = 'df', threshold=10)
                 
                 # Select the graph (e.g., at time step 10)
                 G = temporal_graphs[10][1]
@@ -813,8 +802,8 @@ def main():
                 # Initialize model
                 model = Model3(
                     hidden_channels=hidden_channels, 
-                    out_channels= 1 if task_type == "Regression" else num_parts, 
-                    num_parts=num_parts,
+                    out_channels= 1 if task_type == "Regression" else len(temporal_graphs[1][1]["PARTS"].y), 
+                    num_parts=len(temporal_graphs[1][1]["PARTS"].y),
                     G=G
                 )
                 
@@ -907,6 +896,7 @@ def main():
                     st.plotly_chart(fig_r2)
             except Exception as e:
                 st.error(f"An error occurred during training: {str(e)}")
+                print(str(e))
 
 # Run the main function
 if __name__ == "__main__":
