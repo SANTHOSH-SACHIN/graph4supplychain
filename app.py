@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -12,6 +10,7 @@ import warnings
 warnings.filterwarnings('ignore')
 import copy
 from dotenv import load_dotenv
+import hybrid_st as hm
 load_dotenv()
 
 
@@ -725,7 +724,7 @@ def main():
                             node_id,
                             'demand',
                             lookback=lookback,
-                            epochs=epochs,
+                            epochs=num_epochs,
                             batch_size=batch_size
                         )
                 elif model_type == "Prophet":
@@ -1266,14 +1265,82 @@ def main():
                         num_classes = 20
                         )
                     st.sidebar.success("Successfully connected to server!")
+                    
                 except Exception as e:
                     st.sidebar.error(f"Error connecting to server: {str(e)}")
                     return
             else:
                 st.sidebar.warning("Please enter a server URL")
                 return
-                
+        try:
+            with st.spinner("Loading and processing data..."):
+                temporal_graphs, hetero_obj =parser.create_temporal_graph(regression = False, out_steps = 3, multistep = False, task = 'df', threshold=10)
+                demand_df = parser.get_df()
+                demand_df.index = pd.to_datetime(demand_df.index)
+        except Exception as e:
+            st.error(f"Error processing data: {str(e)}")
+            return                
+        
+        model_choice = st.selectbox("Select a Type", ["Non-Aggregated Columns", "Aggregated Columns"])
+        if model_choice == "Non-Aggregated Columns":
+            part_id_list = []
+            part_data = parser.get_extended_df()
+            # st.dataframe(part_data)
+            labels_df = parser.get_df()
+            for x in labels_df.columns:
+                part_data[x]['demand'] = labels_df[x]
+            # st.dataframe(labels_df)
             
+            for i in labels_df.columns:
+                part_id_list.append(i)
+            
+            # final_agg = {}   
+            node_id = st.selectbox("Select part id", labels_df.columns)
+            if st.button("Run Forecasting"):
+                viz,mape = hm.demand_forecasting(part_data,node_id)
+                # final_agg = agg_mape
+            # Display results
+                st.write("Aggregated MAPE Scores:")
+                # st.write(mape)
+            
+            # for key, values in final_agg.items():
+            #     if node_id == key:
+            #         plot = values[0]
+            #         mape = values[1]
+                    
+                st.pyplot(viz)
+                st.write(mape)
+                
+        elif model_choice == "Aggregated Columns":
+            aggregation_method = st.radio("Select column aggregation type",["mean","sum","min","max"])
+            part_id_list = []
+            labels_df = parser.get_df()
+            node_id = st.selectbox("Select part id", labels_df.columns)
+            part_data = parser.aggregate_part_features(node_id,aggregation_method)
+            
+            part_data['demand'] = labels_df[node_id]
+            
+            st.dataframe(part_data)
+            
+            for i in labels_df.columns:
+                part_id_list.append(i)
+            
+            # # final_agg = {}   
+            # # node_id = st.selectbox("Select part id", labels_df.columns)
+            if st.button("Run Forecasting"):
+                viz,mape = hm.aggregated_demand_forecasting(part_data,node_id)
+                # final_agg = agg_mape
+            # Display results
+                st.write("Aggregated MAPE Scores:")
+                # st.write(mape)
+            
+            # # for key, values in final_agg.items():
+            # #     if node_id == key:
+            # #         plot = values[0]
+            # #         mape = values[1]
+                    
+                st.pyplot(viz)
+                st.write(mape)
 # Run the main function
 if __name__ == "__main__":
     main()
