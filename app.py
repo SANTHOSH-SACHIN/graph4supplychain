@@ -137,6 +137,245 @@ class GRUDecoder(torch.nn.Module):
         
         return torch.stack(outputs)
 
+
+class MultistepDecoder(torch.nn.Module):
+    def __init__(self, in_channels, out_channels, out_steps):
+        super().__init__()
+
+        # Define the MLP layers
+        hidden_layers = [128, 64, 32]
+        self.linear = MLP(in_channels, hidden_layers, out_channels * out_steps)
+        self.out_steps = out_steps
+        self.out_channels = out_channels
+
+    def forward(self, z_dict):
+        z = z_dict['PARTS'] 
+        logits = self.linear(z)
+        return logits.view(-1, self.out_channels, self.out_steps)
+
+
+class MultiStepModel(torch.nn.Module):
+    def __init__(self, hidden_channels, out_channels,out_steps, G=None):
+        super().__init__()
+        # Dynamically choose encoder based on user configuration
+        self.encoder_type = st.session_state.get('encoder_type', 'SAGEConv')
+        
+        if self.encoder_type == 'SAGEConv':
+            self.encoder = GNNEncoder(hidden_channels, hidden_channels)
+        elif self.encoder_type == 'GATConv':
+            self.encoder = GNNEncoder2(hidden_channels, hidden_channels)
+        else:
+            self.encoder = GNNEncoder3(hidden_channels, hidden_channels)
+        
+        if G is not None:
+            self.encoder = to_hetero(self.encoder, G.metadata(), aggr='mean')
+        
+        self.decoder = MultistepDecoder(hidden_channels, out_channels, out_steps=out_steps)
+    
+    def forward(self, x_dict, edge_index_dict, edge_attr=None):
+        if self.encoder_type == 'SAGEConv':
+            z_dict = self.encoder(x_dict, edge_index_dict)
+        else:
+            z_dict = self.encoder(x_dict, edge_index_dict, edge_attr)
+        return self.decoder(z_dict)
+
+def train_multistep_regression(num_epochs, model, optimizer, loss_fn, temporal_graphs, label='PARTS', device='cpu', patience=5):
+    best_test_loss = float('inf')
+    patience_counter = 0
+    best_state = None
+
+    for epoch in range(num_epochs):
+        epoch_train_loss = 0.0
+        epoch_train_mae = 0.0
+        train_true_all = []
+        train_pred_all = []
+        epoch_test_loss = 0.0
+        epoch_test_mae = 0.0
+        test_true_all = []
+        test_pred_all = []
+        graph_count = 0
+
+        for row in temporal_graphs:
+            G = temporal_graphs[row][1]
+            graph_count += 1
+
+            # Training phase
+            model.train()
+            optimizer.zero_grad()
+
+            # Forward pass
+            out = model(G.x_dict, G.edge_index_dict).squeeze(1)
+
+            # Get training masks and compute loss
+            train_mask = G[label]['train_mask']
+            train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
+
+            # Backward pass
+            train_loss.backward()
+            optimizer.step()
+
+            # Compute training metrics
+            with torch.no_grad():
+                train_pred = out[train_mask].cpu().numpy()
+                train_true = G[label].y[train_mask].cpu().numpy()
+                train_mae = torch.abs(out[train_mask] - G[label].y[train_mask]).mean().item()
+
+                # Collect all predictions and true values
+                train_pred_all.append(train_pred)
+                train_true_all.append(train_true)
+                epoch_train_loss += train_loss.item()
+                epoch_train_mae += train_mae
+
+            # Evaluation phase
+            model.eval()
+            with torch.no_grad():
+                test_mask = G[label]['test_mask']
+                test_pred = out[test_mask].cpu().numpy()
+                test_true = G[label].y[test_mask].cpu().numpy()
+
+                test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+                test_mae = torch.abs(out[test_mask] - G[label].y[test_mask]).mean().item()
+
+                # Collect all predictions and true values
+                test_pred_all.append(test_pred)
+                test_true_all.append(test_true)
+                epoch_test_loss += test_loss.item()
+                epoch_test_mae += test_mae
+
+        # Aggregate all predictions and true values
+        train_true_all = np.concatenate(train_true_all)
+        train_pred_all = np.concatenate(train_pred_all)
+        test_true_all = np.concatenate(test_true_all)
+        test_pred_all = np.concatenate(test_pred_all)
+
+        # Compute R² score over all data
+        avg_train_r2 = r2_score(train_true_all, train_pred_all)
+        avg_test_r2 = r2_score(test_true_all, test_pred_all)
+
+        # Average losses and MAEs
+        avg_train_loss = epoch_train_loss / graph_count
+        avg_train_mae = epoch_train_mae / graph_count
+        avg_test_loss = epoch_test_loss / graph_count
+        avg_test_mae = epoch_test_mae / graph_count
+
+        # Check for improvement
+        if avg_test_loss < best_test_loss:
+            best_test_loss = avg_test_loss
+            best_state = model.state_dict().copy()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+
+        # Early stopping
+        if patience_counter >= patience:
+            st.write(f"Early stopping triggered at epoch {epoch + 1}")
+            break
+
+        # Print epoch metrics
+        st.write(f"Epoch {epoch + 1}/{num_epochs}")
+        st.write(f"Train Loss: {avg_train_loss:.4f}, Train MAE: {avg_train_mae:.4f}, Train R²: {avg_train_r2:.4f}")
+        st.write(f"Test Loss: {avg_test_loss:.4f}, Test MAE: {avg_test_mae:.4f}, Test R²: {avg_test_r2:.4f}")
+        st.write("----------------------------------------")
+
+    # Load best model
+    if best_state:
+        model.load_state_dict(best_state)
+    return model, best_test_loss
+
+
+
+def train_multistep_classification(num_epochs, model, optimizer, loss_fn, temporal_graphs, label='PARTS', device='cpu', patience=5):
+    best_test_accuracy = 0.0
+    best_test_loss = float('inf')
+    patience_counter = 0
+    best_state = None
+
+    for epoch in range(num_epochs):
+        epoch_train_loss = 0.0
+        epoch_train_accuracy = 0.0
+        epoch_test_loss = 0.0
+        epoch_test_accuracy = 0.0
+        graph_count = 0 
+
+        for row in temporal_graphs:
+            G = temporal_graphs[row][1]
+            graph_count += 1
+
+            # Training phase
+            model.train()
+            optimizer.zero_grad()
+            
+            # Forward pass
+            out = model(G.x_dict, G.edge_index_dict, G.edge_attr)
+            
+            # Get training masks and compute loss
+            train_mask = G[label]['train_mask']
+            train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
+            
+            # Backward pass
+            train_loss.backward()
+            optimizer.step()
+            
+            # Compute training metrics
+            with torch.no_grad():
+                train_pred = out[train_mask].argmax(dim=1).cpu()
+                train_true = G[label].y[train_mask].cpu()
+                correct = (train_pred == train_true).all(dim=1)
+                train_accuracy = correct.sum().item() / len(correct)
+            
+            # Update epoch metrics for training
+            epoch_train_loss += train_loss.item()
+            epoch_train_accuracy += train_accuracy
+
+            # Evaluation phase
+            model.eval()
+            with torch.no_grad():
+                # Forward pass for testing
+                test_mask = G[label]['test_mask']
+                test_pred = out[test_mask].argmax(dim=1).cpu()
+                test_true = G[label].y[test_mask].cpu()
+                
+                # Compute test metrics
+                test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+                correct = (test_pred == test_true).all(dim=1)
+                test_accuracy =  correct.sum().item() / len(correct)
+
+                # Update epoch metrics for testing
+                epoch_test_loss += test_loss.item()
+                epoch_test_accuracy += test_accuracy
+
+        # Average metrics over all graphs
+        avg_train_loss = epoch_train_loss / graph_count
+        avg_train_accuracy = epoch_train_accuracy / graph_count
+        avg_test_loss = epoch_test_loss / graph_count
+        avg_test_accuracy = epoch_test_accuracy / graph_count
+
+        # Check for improvement
+        if avg_test_loss < best_test_loss:
+            best_test_loss = avg_test_loss
+            best_test_accuracy = avg_test_accuracy
+            best_state = model.state_dict().copy()
+            patience_counter = 0  # Reset patience counter
+        else:
+            patience_counter += 1
+        
+        # Early stopping
+        if patience_counter >= patience:
+            st.write(f"Early stopping triggered at epoch {epoch + 1}")
+            break
+
+        # Print epoch metrics
+        st.write(f"Epoch {epoch + 1}/{num_epochs}")
+        st.write(f"Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.4f}")
+        st.write(f"Test Loss: {avg_test_loss:.4f}, Test Accuracy: {avg_test_accuracy:.4f}")
+        st.write("----------------------------------------")
+    
+    # Load best model
+    if best_state:
+        model.load_state_dict(best_state)
+    return model, best_test_accuracy
+
+
 class Model3(torch.nn.Module):
     def __init__(self, hidden_channels, out_channels, num_parts, G=None):
         super().__init__()
@@ -602,7 +841,7 @@ def main():
     # Sidebar selection
     task = st.sidebar.selectbox(
         "Select Task",
-        ["Time Series Forecasting", "Single Step GNN","Bottleneck Detection","Hybrid Model"]
+        ["Time Series Forecasting", "Single Step GNN" , "Multi Step GNN","Bottleneck Detection","Hybrid Model"]
     )
     
     if task == "Time Series Forecasting":
@@ -610,11 +849,11 @@ def main():
         
         # Data source selection
         data_source = st.sidebar.radio("Select Data Source", ["Local Directory", "Server"])
-        version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
-
+        version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="ts_version")
+        local_dir = st.sidebar.text_input("Enter local directory path", "./data/")
         if data_source == "Local Directory":
             st.sidebar.header("Local Directory Settings")
-            local_dir = st.sidebar.text_input("Enter local directory path", "./data/")
+            
             try:
 
                 parser = TemporalHeterogeneousGraphParser(
@@ -634,9 +873,9 @@ def main():
             st.sidebar.header("Server Settings")
             server_url = os.getenv("SERVER_URL")
             # st.write(server_url)
-            
+            local_dir = st.sidebar.text_input("Enter local directory path", "./data/",key = "local_dir")
             if server_url:
-                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="ts_server_version")
                 try:
                     parser = TemporalHeterogeneousGraphParser(
                         base_url=server_url, 
@@ -867,14 +1106,6 @@ def main():
                 help="Number of hidden channels in the graph neural network"
             )
             
-            # num_parts = st.number_input(
-            #     "Number of Parts", 
-            #     min_value=10, 
-            #     max_value=1000, 
-            #     value=500,
-            #     help="Number of parts for the GRU Decoder"
-            # )
-            
             num_epochs = st.number_input(
                 "Number of Epochs", 
                 min_value=1, 
@@ -899,12 +1130,12 @@ def main():
                 value=10,
                 help="Number of epochs to wait before early stopping"
             )
-        
+        local_dir = ""
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=False)
             # metadata_path = ""
-            
+        
             if use_local_files:
                 local_dir = st.text_input("Local Directory Path", "./data")
   
@@ -916,7 +1147,7 @@ def main():
             try:
                 # Initialize parser and create temporal graph
                 base_url = os.getenv("SERVER_URL")
-                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="train_graph_version")
                 headers = {"accept": "application/json"}
                 
                 parser = TemporalHeterogeneousGraphParser(
@@ -1034,6 +1265,170 @@ def main():
                 st.error(f"An error occurred during training: {str(e)}")
                 print(str(e))
 
+    elif task == "Multi Step GNN":
+        pass
+        st.subheader("Graph Neural Network Multi-Step Forecasting")
+
+        with st.sidebar.expander("🎯 Task Configuration", expanded=True):
+            task_type = st.radio("Select Task Type", 
+                                ["Classification", "Regression"], 
+                                help="Choose whether to perform node classification or regression")
+        
+        # Store task type in session state
+            st.session_state.task_type = task_type
+            num_layers = st.number_input(
+                "Number of Layers", 
+                min_value=1, 
+                max_value=5, 
+                value=2,
+                help="Number of graph convolutional layers"
+            )
+            layer_config = {}
+            for i in range(num_layers):
+                encoder_type = st.sidebar.selectbox(
+                        "Select Layer Type",
+                        ["SAGEConv", "GATConv" , "GeneralConv"] , key=f"layer_{i}"
+                    )
+                st.session_state[f'encoder_type_{i}'] = encoder_type
+
+                # Layer-specific parameters based on encoder type
+                if encoder_type == 'SAGEConv':
+                    normalize = st.checkbox(f"Normalize Layer {i+1}", value=True)
+                    layer_config[f'layer{i+1}'] = {
+                        'normalize': normalize
+                    }
+                
+                elif encoder_type == 'GATConv':
+                    heads = st.number_input(f"Number of Attention Heads Layer {i+1}", 
+                                            min_value=1, value=1)
+                    dropout = st.slider(f"Dropout Layer {i+1}", 
+                                        min_value=0.0, 
+                                        max_value=1.0, 
+                                        value=0.0)
+                    layer_config[f'layer{i+1}'] = {
+                        'heads': heads,
+                        'dropout': dropout
+                    }
+                
+                elif encoder_type == 'GeneralConv':
+                    aggr = st.selectbox(f"Aggregation Type Layer {i+1}", 
+                                        ['add', 'mean', 'max'])
+
+                    attention = st.checkbox(f"Use Attention Layer {i+1}", value=False)
+                    layer_config[f'layer{i+1}'] = {
+                        'aggr': aggr,
+                        'attention': attention
+                    }
+        with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
+            hidden_channels = st.number_input(
+                "Hidden Channels", 
+                min_value=8, 
+                max_value=256, 
+                value=64,
+                help="Number of hidden channels in the graph neural network"
+            )
+            
+            num_epochs = st.number_input(
+                "Number of Epochs", 
+                min_value=1, 
+                max_value=10000, 
+                value=50,
+                help="Number of training epochs"
+            )
+            
+            learning_rate = st.number_input(
+                "Learning Rate", 
+                min_value=0.0001, 
+                max_value=0.1, 
+                value=0.001,
+                format="%.4f",
+                help="Learning rate for the optimizer"
+            )
+            out_steps = st.number_input(
+                "Out Steps", 
+                min_value=1, 
+                max_value=5, 
+                value=3,
+                help="Number of values to forecast"
+            )            
+            patience = st.number_input(
+                "Early Stopping Patience", 
+                min_value=1, 
+                max_value=50, 
+                value=10,
+                help="Number of epochs to wait before early stopping"
+            )
+        local_dir = ""
+        # Data Configuration
+        with st.sidebar.expander("📊 Data Configuration", expanded=True):
+            use_local_files = st.checkbox("Use Local Files", value=False)
+            # metadata_path = ""
+        
+            if use_local_files:
+                local_dir = st.text_input("Local Directory Path", "./data")
+  
+        
+        # Start Training Button
+        train_button = st.sidebar.button("🚀 Start Training")
+        if train_button:
+            try:
+                # Initialize parser and create temporal graph
+                base_url = os.getenv("SERVER_URL")
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="train_graph_version")
+                headers = {"accept": "application/json"}
+                
+                parser = TemporalHeterogeneousGraphParser(
+                    base_url=base_url,
+                    version=version,
+                    headers = {"accept": "application/json"},
+                    meta_data_path="metadata.json",
+                    use_local_files=use_local_files,
+                    local_dir=local_dir+"/", 
+                )
+                
+                # Create temporal graphs based on task type
+                regression_flag = True if st.session_state.task_type == "Regression" else False
+                temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = regression_flag, out_steps = 3, multistep = True, task = 'df', threshold=10)
+                
+                G = temporal_graphs[1][1]
+            
+                # st.write(G)
+                # Initialize model
+                device = "cpu"
+                model = MultiStepModel(
+                    hidden_channels=hidden_channels, 
+                    out_channels= 1 if task_type == "Regression" else len(temporal_graphs[1][1]["PARTS"].y), 
+                    G=G,
+                    out_steps = out_steps
+                ).to(device)
+
+
+                optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+                loss_fn = F.cross_entropy if task_type == "Classification" else nn.MSELoss()
+
+
+                if  task_type == "Classification":
+                    trained_model, best_accuracy = trained_model, best_accuracy = train_multistep_classification(
+                    num_epochs=num_epochs, 
+                    model=model, 
+                    optimizer=optimizer, 
+                    loss_fn=loss_fn, 
+                    temporal_graphs=hetero_obj, 
+                    label='PARTS', 
+                    device='cpu', 
+                    patience=100
+                )
+                else:
+                    trained_model, best_test_mae = train_multistep_regression(
+                        num_epochs, model, optimizer, loss_fn, hetero_obj, label='PARTS', device=device, patience=patience
+                    )
+
+
+
+            except Exception as e:
+                st.error(f"An error occurred during training: {str(e)}")
+                print(str(e))
+
     elif task == "Bottleneck Detection":
         st.subheader("Graph Neural Network Bottleneck Detection")
     
@@ -1115,7 +1510,7 @@ def main():
                 value=10,
                 help="Number of epochs to wait before early stopping"
             )
-        
+        local_dir = ""
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=False)
@@ -1131,7 +1526,7 @@ def main():
             try:
                 # Initialize parser and create temporal graph
                 base_url = os.getenv("SERVER_URL")
-                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="graphversion")
                 headers = {"accept": "application/json"}
                 
                 parser = TemporalHeterogeneousGraphParser(
@@ -1222,13 +1617,15 @@ def main():
             except Exception as e:
                 st.error(f"An error occurred during training: {str(e)}")
                 print(str(e))
+        
+
 
     elif task == "Hybrid Model":
         st.subheader("Hybrid Model")
         # Data source selection
         data_source = st.sidebar.radio("Select Data Source", ["Local Directory", "Server"])
-        version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
-
+        version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="hybridversion")
+        local_dir=""
         if data_source == "Local Directory":
             st.sidebar.header("Local Directory Settings")
             local_dir = st.sidebar.text_input("Enter local directory path", "./data/")
