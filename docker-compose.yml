@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  forecasting:
+    build: .
+    ports:
+      - "8503:8503"
+    volumes:
+      - ./data:/app/data
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
