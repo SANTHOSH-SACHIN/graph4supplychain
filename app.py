@@ -93,6 +93,20 @@ class GNNEncoder3(torch.nn.Module):
         x = self.conv2(x, edge_index, edge_attr)
         return x
 
+
+class BottleneckDecoder(torch.nn.Module):
+    def __init__(self, in_channels, out_channels, label):
+        super().__init__()
+        self.label = label
+        hidden_layers = [128,64, 32]
+        self.linear = MLP(in_channels, hidden_layers, out_channels)
+        self.sigmoid = torch.nn.Sigmoid()
+
+    def forward(self, z_dict):
+        z = z_dict[self.label]
+        output = self.linear(z)
+        return self.sigmoid(output)
+
 class GRUDecoder(torch.nn.Module):
     def __init__(self, in_channels, out_channels, num_parts, hidden_gru=64):
         super().__init__()
@@ -148,6 +162,129 @@ class Model3(torch.nn.Module):
         else:
             z_dict = self.encoder(x_dict, edge_index_dict, edge_attr)
         return self.decoder(z_dict)
+
+
+class Bottleneck_Model(torch.nn.Module):
+    def __init__(self, hidden_channels, out_channels, G=None , label='FACILITY'):
+        super().__init__()
+        # Dynamically choose encoder based on user configuration
+        self.encoder_type = st.session_state.get('encoder_type', 'SAGEConv')
+        
+        if self.encoder_type == 'SAGEConv':
+            self.encoder = GNNEncoder(hidden_channels, hidden_channels)
+        elif self.encoder_type == 'GATConv':
+            self.encoder = GNNEncoder2(hidden_channels, hidden_channels)
+        else:
+            self.encoder = GNNEncoder3(hidden_channels, hidden_channels)
+        
+        if G is not None:
+            self.encoder = to_hetero(self.encoder, G.metadata(), aggr='mean')
+        
+        self.decoder = BottleneckDecoder(hidden_channels, out_channels, label)
+    
+    def forward(self, x_dict, edge_index_dict, edge_attr=None):
+        if self.encoder_type == 'SAGEConv':
+            z_dict = self.encoder(x_dict, edge_index_dict)
+        else:
+            z_dict = self.encoder(x_dict, edge_index_dict, edge_attr)
+        return self.decoder(z_dict)
+
+def train_bottleneck(num_epochs, model, optimizer, loss_fn, temporal_graphs, label='FACILITY', device='cpu', patience=5):
+    st.subheader("Training Progress . . .")
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    best_test_accuracy = 0.0
+    best_test_loss = float('inf')
+    patience_counter = 0
+    best_state = None
+    epoch_losses = []
+    epoch_accuracies = []
+
+    for epoch in range(num_epochs):
+        epoch_train_loss = 0.0
+        epoch_train_accuracy = 0.0
+        epoch_test_loss = 0.0
+        epoch_test_accuracy = 0.0
+        graph_count = 0 
+
+        for row in temporal_graphs:
+            G = temporal_graphs[row][1]
+            graph_count += 1
+
+            # Training phase
+            model.train()
+            optimizer.zero_grad()
+
+            # Forward pass
+            out = model(G.x_dict, G.edge_index_dict, G.edge_attr).squeeze(1)
+
+            # Get training masks and compute loss
+            train_mask = G[label]['train_mask']
+            train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
+
+            # Backward pass
+            train_loss.backward()
+            optimizer.step()
+
+            # Compute training metrics
+            with torch.no_grad():
+                train_pred = out[train_mask]
+                train_true = G[label].y[train_mask].cpu()
+                train_pred_binary = (train_pred > 0.5)
+                train_accuracy = accuracy_score(train_true, train_pred_binary)
+
+            # Update epoch metrics for training
+            epoch_train_loss += train_loss.item()
+            epoch_train_accuracy += train_accuracy
+
+            # Evaluation phase
+            model.eval()
+            with torch.no_grad():
+                # Forward pass for testing
+                test_mask = G[label]['test_mask']
+                test_pred = out[test_mask].cpu()
+                test_pred_binary = (test_pred > 0.5)
+                test_true = G[label].y[test_mask].cpu()
+
+                # Compute test metrics
+                test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+                test_accuracy = accuracy_score(test_true, test_pred_binary)
+
+                # Update epoch metrics for testing
+                epoch_test_loss += test_loss.item()
+                epoch_test_accuracy += test_accuracy
+
+        # Average metrics over all graphs
+        avg_train_loss = epoch_train_loss / graph_count
+        avg_train_accuracy = epoch_train_accuracy / graph_count
+        avg_test_loss = epoch_test_loss / graph_count
+        avg_test_accuracy = epoch_test_accuracy / graph_count
+
+        epoch_losses.append(avg_test_loss)
+        epoch_accuracies.append(avg_test_accuracy)
+
+        # Check for improvement
+        if avg_test_loss < best_test_loss:
+            best_test_loss = avg_test_loss
+            best_test_accuracy = avg_test_accuracy
+            best_state = model.state_dict().copy()
+            patience_counter = 0  # Reset patience counter
+        else:
+            patience_counter += 1
+
+        # Early stopping
+        if patience_counter >= patience:
+            st.write(f"Early stopping triggered at epoch {epoch + 1}")
+            break
+
+        # Update progress bar and status text
+        progress_bar.progress((epoch + 1) / num_epochs)
+        status_text.text(f"Epoch {epoch + 1}/{num_epochs} - Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.4f}")
+
+    # Load best model
+    if best_state:
+        model.load_state_dict(best_state)
+    return model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies
 
 def train_classification(num_epochs, model, optimizer, loss_fn, temporal_graphs, label='PARTS', device='cpu', patience=5):
     st.subheader("Training Progress . . .")
@@ -466,7 +603,7 @@ def main():
     # Sidebar selection
     task = st.sidebar.selectbox(
         "Select Task",
-        ["Time Series Forecasting", "GNN Based Analysis","Hybrid Model"]
+        ["Time Series Forecasting", "Single Step GNN","Bottleneck Detection","Hybrid Model"]
     )
     
     if task == "Time Series Forecasting":
@@ -668,7 +805,7 @@ def main():
         else:
             st.warning("Please select a node for analysis.")
     
-    elif task == "GNN Based Analysis":
+    elif task == "Single Step GNN":
         st.subheader("Graph Neural Network Training Interface")
         # Model Configuration Section
 
@@ -894,6 +1031,195 @@ def main():
                     fig_r2.add_trace(go.Scatter(x=list(range(len(epoch_r2_scores))), y=epoch_r2_scores, mode='lines+markers', name='R² Score'))
                     fig_r2.update_layout(title="Epoch-wise R² Score", xaxis_title="Epoch", yaxis_title="R² Score")
                     st.plotly_chart(fig_r2)
+            except Exception as e:
+                st.error(f"An error occurred during training: {str(e)}")
+                print(str(e))
+
+    elif task == "Bottleneck Detection":
+        st.subheader("Graph Neural Network Bottleneck Detection")
+    
+        with st.sidebar.expander("⚙️ Model Config", expanded=True):
+            num_layers = st.number_input(
+                "Number of Layers", 
+                min_value=1, 
+                max_value=5, 
+                value=2,
+                help="Number of graph convolutional layers"
+            )
+            layer_config = {}
+            for i in range(num_layers):
+                encoder_type = st.sidebar.selectbox(
+                        "Select Layer Type",
+                        ["SAGEConv", "GATConv" , "GeneralConv"] , key=f"layer_{i}"
+                    )
+                st.session_state[f'encoder_type_{i}'] = encoder_type
+
+                # Layer-specific parameters based on encoder type
+                if encoder_type == 'SAGEConv':
+                    normalize = st.checkbox(f"Normalize Layer {i+1}", value=True)
+                    layer_config[f'layer{i+1}'] = {
+                        'normalize': normalize
+                    }
+                
+                elif encoder_type == 'GATConv':
+                    heads = st.number_input(f"Number of Attention Heads Layer {i+1}", 
+                                            min_value=1, value=1)
+                    dropout = st.slider(f"Dropout Layer {i+1}", 
+                                        min_value=0.0, 
+                                        max_value=1.0, 
+                                        value=0.0)
+                    layer_config[f'layer{i+1}'] = {
+                        'heads': heads,
+                        'dropout': dropout
+                    }
+                
+                elif encoder_type == 'GeneralConv':
+                    aggr = st.selectbox(f"Aggregation Type Layer {i+1}", 
+                                        ['add', 'mean', 'max'])
+
+                    attention = st.checkbox(f"Use Attention Layer {i+1}", value=False)
+                    layer_config[f'layer{i+1}'] = {
+                        'aggr': aggr,
+                        'attention': attention
+                    }
+        with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
+            hidden_channels = st.number_input(
+                "Hidden Channels", 
+                min_value=8, 
+                max_value=256, 
+                value=64,
+                help="Number of hidden channels in the graph neural network"
+            )
+            
+
+            num_epochs = st.number_input(
+                "Number of Epochs", 
+                min_value=1, 
+                max_value=10000, 
+                value=50,
+                help="Number of training epochs"
+            )
+            
+            learning_rate = st.number_input(
+                "Learning Rate", 
+                min_value=0.0001, 
+                max_value=0.1, 
+                value=0.001,
+                format="%.4f",
+                help="Learning rate for the optimizer"
+            )
+            
+            patience = st.number_input(
+                "Early Stopping Patience", 
+                min_value=1, 
+                max_value=50, 
+                value=10,
+                help="Number of epochs to wait before early stopping"
+            )
+        
+        # Data Configuration
+        with st.sidebar.expander("📊 Data Configuration", expanded=True):
+            use_local_files = st.checkbox("Use Local Files", value=False)
+            
+            if use_local_files:
+                local_dir = st.text_input("Local Directory Path", "./data")
+  
+        
+        # Start Training Button
+        train_button = st.sidebar.button("🚀 Start Training")
+
+        if train_button:
+            try:
+                # Initialize parser and create temporal graph
+                base_url = os.getenv("SERVER_URL")
+                version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="version")
+                headers = {"accept": "application/json"}
+                
+                parser = TemporalHeterogeneousGraphParser(
+                    base_url=base_url,
+                    version=version,
+                    headers = {"accept": "application/json"},
+                    meta_data_path="metadata.json",
+                    use_local_files=use_local_files,
+                    local_dir=local_dir+"/", 
+                )
+
+                temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = False, out_steps = 3, multistep = False, task = 'bd', threshold=10)
+                
+                # Select the graph (e.g., at time step 10)
+                G = temporal_graphs[10][1]
+                
+                # Initialize model
+                model = Bottleneck_Model(
+                    hidden_channels=hidden_channels, 
+                    out_channels= 1, 
+                    label="FACILITY",
+                    G=G
+                )
+                
+                # Move model to appropriate device
+                device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                model = model.to(device)
+                
+                # Configure optimizer and loss function
+                optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+                
+
+                loss_fn = F.binary_cross_entropy
+                train_fn = train_bottleneck
+
+                
+                trained_model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies = train_bottleneck(
+                    num_epochs, model, optimizer, loss_fn, temporal_graphs, label='FACILITY', device=device, patience=patience
+                )
+
+                
+                # Display results
+
+                st.success(f"Training Completed. Best Test Accuracy: {best_test_accuracy:.4f}, Best Test Loss: {best_test_loss:.4f}")
+
+                # Dashboard for Model Performance
+                st.subheader("Model Performance Dashboard")
+                
+                # Custom CSS for styling
+                st.markdown(
+                    """
+                    <style>
+                    .metric-card {
+                        
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin: 10px;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        transition: transform 0.3s ease-in-out;
+                    }
+                    .metric-card:hover {
+                        transform: scale(1.05);
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                # Create columns for metrics
+           
+            
+                col1, col2 = st.columns(2)
+                col1.markdown(f"<div class='metric-card'><h3>Accuracy</h3><p>{best_test_accuracy:.4f}</p></div>", unsafe_allow_html=True)
+                col2.markdown(f"<div class='metric-card'><h3>Loss</h3><p>{best_test_loss:.4f}</p></div>", unsafe_allow_html=True)
+                
+                # Plot performance graph for loss
+                fig_loss = go.Figure()
+                fig_loss.add_trace(go.Scatter(x=list(range(len(epoch_losses))), y=epoch_losses, mode='lines+markers', name='Loss'))
+                fig_loss.update_layout(title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss")
+                st.plotly_chart(fig_loss)
+                
+                # Plot performance graph for accuracy
+                fig_accuracy = go.Figure()
+                fig_accuracy.add_trace(go.Scatter(x=list(range(len(epoch_accuracies))), y=epoch_accuracies, mode='lines+markers', name='Accuracy'))
+                fig_accuracy.update_layout(title="Epoch-wise Accuracy", xaxis_title="Epoch", yaxis_title="Accuracy")
+                st.plotly_chart(fig_accuracy)
+                
             except Exception as e:
                 st.error(f"An error occurred during training: {str(e)}")
                 print(str(e))
