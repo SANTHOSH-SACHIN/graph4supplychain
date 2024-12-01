@@ -9,6 +9,7 @@ import requests
 import warnings
 warnings.filterwarnings('ignore')
 import copy
+import io
 from dotenv import load_dotenv
 import hybrid_st as hm
 load_dotenv()
@@ -729,7 +730,19 @@ st.set_page_config(
     layout="wide"
 )
 
+def download_model_button(trained_model, filename='model.pth'):
+    buffer = io.BytesIO()
 
+    torch.save(trained_model.state_dict(), buffer)
+    
+    buffer.seek(0)
+    
+    st.download_button(
+        label="Download Trained Model",
+        data=buffer,
+        file_name=filename,
+        mime='application/octet-stream'
+    )
 
 class StreamlitTimeSeriesAnalyzer:
     def __init__(self, metadata_path: str = None, server_url: str = None, headers: Dict = None):
@@ -1193,10 +1206,14 @@ def main():
                     trained_model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies = train_classification(
                         num_epochs, model, optimizer, loss_fn, temporal_graphs, label='PARTS', device=device, patience=patience
                     )
+                    download_model_button(trained_model, filename='SingleStepGNNClassification.pth')
+
                 else:
                     trained_model, best_test_r2, best_test_mae, epoch_losses, epoch_r2_scores = train_regression(
                         num_epochs, model, optimizer, loss_fn, temporal_graphs, label='PARTS', device=device, patience=patience
                     )
+                    download_model_button(trained_model, filename='SingleStepGNNRegression.pth')
+
                 
                 # Display results
                 if task_type == "Classification":
@@ -1418,10 +1435,12 @@ def main():
                     device='cpu', 
                     patience=100
                 )
+                    download_model_button(trained_model, filename='MultiStepGNNClassification.pth')
                 else:
                     trained_model, best_test_mae = train_multistep_regression(
                         num_epochs, model, optimizer, loss_fn, hetero_obj, label='PARTS', device=device, patience=patience
                     )
+                    download_model_button(trained_model, filename='MultiStepGNNRegression.pth')
 
 
 
@@ -1566,6 +1585,7 @@ def main():
                 trained_model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies = train_bottleneck(
                     num_epochs, model, optimizer, loss_fn, temporal_graphs, label='FACILITY', device=device, patience=patience
                 )
+                download_model_button(trained_model, filename='BottleneckDetection.pth')
 
                 
                 # Display results
