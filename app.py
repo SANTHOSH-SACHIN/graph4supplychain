@@ -1130,7 +1130,7 @@ def main():
                 value=10,
                 help="Number of epochs to wait before early stopping"
             )
-        local_dir = ""
+        local_dir = "./data"
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=False)
@@ -1164,7 +1164,7 @@ def main():
                 temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = regression_flag, out_steps = 3, multistep = False, task = 'df', threshold=10)
                 
                 # Select the graph (e.g., at time step 10)
-                G = temporal_graphs[10][1]
+                G = temporal_graphs[len(temporal_graphs)-1][1]
                 
                 # Initialize model
                 model = Model3(
@@ -1358,7 +1358,7 @@ def main():
                 value=10,
                 help="Number of epochs to wait before early stopping"
             )
-        local_dir = ""
+        local_dir = "./data"
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=False)
@@ -1390,7 +1390,7 @@ def main():
                 regression_flag = True if st.session_state.task_type == "Regression" else False
                 temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = regression_flag, out_steps = 3, multistep = True, task = 'df', threshold=10)
                 
-                G = temporal_graphs[1][1]
+                G = temporal_graphs[len(temporal_graphs)-1][1]
             
                 # st.write(G)
                 # Initialize model
@@ -1510,7 +1510,7 @@ def main():
                 value=10,
                 help="Number of epochs to wait before early stopping"
             )
-        local_dir = ""
+        local_dir = "./data"
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=False)
@@ -1541,7 +1541,7 @@ def main():
                 temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = False, out_steps = 3, multistep = False, task = 'bd', threshold=10)
                 
                 # Select the graph (e.g., at time step 10)
-                G = temporal_graphs[10][1]
+                G = temporal_graphs[len(temporal_graphs)-1][1]
                 
                 # Initialize model
                 model = Bottleneck_Model(
@@ -1620,10 +1620,10 @@ def main():
         
     elif task == "Parts Analysis":
         st.subheader("Parts Expiry Analysis")
-        local_dir = ""
+        local_dir = "./data"
         # Data Configuration
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
-            use_local_files = st.checkbox("Use Local Files", value=False)
+            use_local_files = st.checkbox("Use Local Files", value=True)
             
             if use_local_files:
                 local_dir = st.text_input("Local Directory Path", "./data")
@@ -1650,16 +1650,13 @@ def main():
         df_expiry = partsdf.map(lambda x: x[1] if isinstance(x, tuple) else pd.NaT)
         st.subheader("Parts Expiry Data Preview")
         st.dataframe(df_expiry)
-        current_date = pd.to_datetime('2024-01-24')
-        df_time_until_replacement = (df_expiry - current_date).map(lambda x: x.days if pd.notna(x) else None)        
-        st.subheader("Parts Time Until Replacement Preview")
-        st.dataframe(df_time_until_replacement)
+
     elif task == "Hybrid Model":
         st.subheader("Hybrid Model")
         # Data source selection
         data_source = st.sidebar.radio("Select Data Source", ["Local Directory", "Server"])
         version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="hybridversion")
-        local_dir=""
+        local_dir="./data"
         if data_source == "Local Directory":
             st.sidebar.header("Local Directory Settings")
             local_dir = st.sidebar.text_input("Enter local directory path", "./data/")
