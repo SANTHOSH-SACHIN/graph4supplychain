@@ -841,7 +841,7 @@ def main():
     # Sidebar selection
     task = st.sidebar.selectbox(
         "Select Task",
-        ["Time Series Forecasting", "Single Step GNN" , "Multi Step GNN","Bottleneck Detection","Hybrid Model"]
+        ["Time Series Forecasting", "Single Step GNN" , "Multi Step GNN","Bottleneck Detection","Hybrid Model" , "Parts Analysis"]
     )
     
     if task == "Time Series Forecasting":
@@ -1618,8 +1618,42 @@ def main():
                 st.error(f"An error occurred during training: {str(e)}")
                 print(str(e))
         
-
-
+    elif task == "Parts Analysis":
+        st.subheader("Parts Expiry Analysis")
+        local_dir = ""
+        # Data Configuration
+        with st.sidebar.expander("📊 Data Configuration", expanded=True):
+            use_local_files = st.checkbox("Use Local Files", value=False)
+            
+            if use_local_files:
+                local_dir = st.text_input("Local Directory Path", "./data")
+  
+            base_url = os.getenv("SERVER_URL")
+            version = st.sidebar.text_input("Enter Version of the fetch","NSS_1000_12",key="graphversion")
+            headers = {"accept": "application/json"}
+            
+        parser = TemporalHeterogeneousGraphParser(
+                    base_url=base_url,
+                    version=version,
+                    headers = {"accept": "application/json"},
+                    meta_data_path="metadata.json",
+                    use_local_files=use_local_files,
+                    local_dir=local_dir+"/", 
+                )
+        temporal_graphs, hetero_obj = parser.create_temporal_graph(regression = True)
+        partsdf = parser.get_date_df()
+        st.subheader("Parts Dates Preview")
+        st.dataframe(partsdf)
+        df_creation = partsdf.map(lambda x: x[0] if isinstance(x, tuple) else pd.NaT)
+        st.subheader("Parts Creation Data Preview")
+        st.dataframe(df_creation)
+        df_expiry = partsdf.map(lambda x: x[1] if isinstance(x, tuple) else pd.NaT)
+        st.subheader("Parts Expiry Data Preview")
+        st.dataframe(df_expiry)
+        current_date = pd.to_datetime('2024-01-24')
+        df_time_until_replacement = (df_expiry - current_date).map(lambda x: x.days if pd.notna(x) else None)        
+        st.subheader("Parts Time Until Replacement Preview")
+        st.dataframe(df_time_until_replacement)
     elif task == "Hybrid Model":
         st.subheader("Hybrid Model")
         # Data source selection
