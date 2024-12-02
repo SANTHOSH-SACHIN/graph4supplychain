@@ -2012,6 +2012,7 @@ def main():
         st.subheader("Parts Expiry Analysis")
         local_dir = "./data"
         # Data Configuration
+        base_url = os.getenv("SERVER_URL")
         with st.sidebar.expander("📊 Data Configuration", expanded=True):
             use_local_files = st.checkbox("Use Local Files", value=True)
 
