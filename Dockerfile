@@ -22,7 +22,8 @@ COPY . .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV SERVER_URL=localhost:8000/api
+ENV SERVER_URL=172.17.149.236/api
+
 
 EXPOSE 8503
 
