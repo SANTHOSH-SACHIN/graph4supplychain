@@ -1209,11 +1209,28 @@ def main():
 
                     if forecast_horizons:
                         if model_type == "ARIMA":
-                            forecasts, mapes = analyzer.models[
-                                "multi_step_arima"
-                            ].forecast_node_multistep(
+                            forecasts, mapes = analyzer.models['multi_step_arima'].forecast_node_multistep(
                                 train_demand, test_demand, forecast_horizons
+                                )
+                            fig = analyzer.models['multi_step_arima'].plot_multistep_forecast_comparison(
+                                train_series=train_demand, 
+                                test_series=test_demand, 
+                                forecasts=forecasts, 
+                                forecast_horizons=forecast_horizons,
+                                title=f"Multi-Step ARIMA Forecast for Node {node_id}",
+                                metric="Demand",
+                                node_id=node_id,
+                                mapes=mapes
                             )
+                            
+                            # Display the plot in Streamlit
+                            st.pyplot(fig)
+                            plt.close()
+                            
+                            # Display MAPE for each horizon
+                            st.write("MAPE for Each Forecast Horizon:")
+                            for horizon, mape in mapes.items():
+                                st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
                         elif model_type == "SARIMA":
                             (
                                 forecasts,
@@ -1225,9 +1242,19 @@ def main():
                             ].forecast_node_multistep_sarima(
                                 train_demand, test_demand, forecast_horizons
                             )
-                            st.write(
-                                f"SARIMA Parameters - Order: {order_params}, Seasonal: {seasonal_params}"
-                            )
+                            # fig = analyzer.models['multi_step_sarima'].plot_multistep_forecast_comparison(
+                            #     train_series=train_demand, 
+                            #     test_series=test_demand, 
+                            #     forecasts=forecasts, 
+                            #     forecast_horizons=forecast_horizons,
+                            #     title=f"Multi-Step SARIMA Forecast for Node {node_id}",
+                            #     metric="Demand",
+                            #     node_id=node_id,
+                            #     mapes=mapes,
+                            #     save_path=None
+                            # )
+                            # st.pyplot(fig)
+                            
                         elif model_type == "Prophet":
                             # forecasts, mapes = analyzer.models['multi_step_prophet'].forecast_node_multistep(
                             #     train_demand, test_demand, forecast_horizons)
