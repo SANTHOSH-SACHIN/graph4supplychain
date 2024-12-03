@@ -1006,11 +1006,11 @@ def main():
         "Select Task",
         [
             "Time Series Forecasting",
-            "Single Step GNN",
-            "Multi Step GNN",
-            "Bottleneck Detection",
-            "Hybrid Model",
-            "Parts Analysis",
+            "Single Step GNN"
+            # "Multi Step GNN",
+            # "Bottleneck Detection",
+            # "Hybrid Model",
+            # "Parts Analysis",
         ],
     )
 
