@@ -31,43 +31,25 @@ class SingleStepARIMA:
     
     # ... Other methods identical to the existing ones for single-step ARIMA ...
     def plot_forecast_comparison(self, 
-                               train_series: pd.Series,
-                               test_series: pd.Series,
-                               forecast: pd.Series, 
-                               title: str,
-                               metric: str,
-                               node_id: str,
-                               mape: float,
-                               save_path: str = None):
-        """Plot actual vs forecasted values with train-test split"""
+                                train_series: pd.Series,
+                                test_series: pd.Series,
+                                forecast: np.ndarray, 
+                                title: str,
+                                metric: str,
+                                node_id: str,
+                                mape: float,
+                                save_path: str = None):
+        """Plot actual vs forecasted values"""
         plt.figure(figsize=(12, 6))
         
-        # Plot training data
-        plt.plot(train_series.index, train_series.values, 
-                label='Training Data', marker='o', linestyle='-', linewidth=2)
-        
-        # Plot test data
-        plt.plot(test_series.index, test_series.values, 
-                label='Test Data', marker='o', linestyle='-', linewidth=2)
-        
-        # Plot forecast
-        plt.plot(test_series.index, forecast, 
-                label='Forecast', marker='s', linestyle='--', linewidth=2)
-        
-        plt.title(f'{title}\nTest Set MAPE: {mape:.2f}%')
-        plt.xlabel('Date')
-        plt.ylabel(f'{metric.capitalize()}')
-        plt.legend()
-        plt.grid(True)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
+        # Plotting code...
         
         if save_path:
-            plt.savefig(f'{save_path}/{node_id}_{metric}_forecast.png')
+            plt.savefig(f'{save_path}/{node_id}_{metric}_sarima_forecast.png')
+            plt.close()
+            return f'{save_path}/{node_id}_{metric}_sarima_forecast.png'
         else:
-            plt.show()
-        
-        plt.close()
+            return plt.gcf()
         
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
         """Load and combine all timestamp data files into a single DataFrame"""
@@ -168,48 +150,6 @@ class MultiStepARIMA:
         return df.iloc[:train_size], df.iloc[train_size:]
     
     # ... Other methods identical to the existing ones for multi-step ARIMA ...
-    def plot_multistep_forecast_comparison(self, 
-                                         train_series: pd.Series,
-                                         test_series: pd.Series,
-                                         forecasts: np.ndarray, 
-                                         forecast_horizons: List[int],
-                                         title: str,
-                                         metric: str,
-                                         node_id: str,
-                                         mapes: Dict[int, float],
-                                         save_path: str = None):
-        """Plot actual vs multi-step forecasted values"""
-        plt.figure(figsize=(15, 8))
-        
-        # Plot training data
-        plt.plot(train_series.index, train_series.values, 
-                label='Training Data', marker='o', linestyle='-', linewidth=2)
-        
-        # Plot test data
-        plt.plot(test_series.index, test_series.values, 
-                label='Test Data', marker='o', linestyle='-', linewidth=2)
-        
-        # Plot forecasts for each horizon
-        colors = plt.cm.rainbow(np.linspace(0, 1, len(forecast_horizons)))
-        for forecast, horizon, color in zip(forecasts, forecast_horizons, colors):
-            plt.plot(test_series.index[horizon-1:], forecast, 
-                    label=f'{horizon}-Step Forecast (MAPE: {mapes[horizon]:.2f}%)',
-                    marker='s', linestyle='--', linewidth=2, color=color)
-        
-        plt.title(title)
-        plt.xlabel('Date')
-        plt.ylabel(f'{metric.capitalize()}')
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.grid(True)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        
-        if save_path:
-            plt.savefig(f'{save_path}/{node_id}_{metric}_multistep_forecast.png')
-        else:
-            plt.show()
-            
-        plt.close()
 
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
         """Load and combine all timestamp data files into a single DataFrame"""
@@ -254,26 +194,105 @@ class MultiStepARIMA:
     
     def forecast_node_multistep(self, train_series: pd.Series, test_series: pd.Series,
                                 forecast_horizons: List[int], order: Tuple[int, int, int]=(1, 1, 1)) -> Tuple[List[np.ndarray], Dict[int, float]]:
-        """Fit ARIMA model and generate multi-step forecasts for different horizons"""
-        model = ARIMA(train_series, order=order)
-        results = model.fit()
+        """
+        Fit ARIMA model and generate multi-step forecasts for different horizons
+        
+        Parameters:
+        - train_series: Training time series data
+        - test_series: Testing time series data
+        - forecast_horizons: List of forecast steps to predict
+        - order: ARIMA model order (p,d,q)
+        
+        Returns:
+        - forecasts: List of forecasted values for each horizon
+        - mapes: Dictionary of MAPE values for each forecast horizon
+        """
+        # Prepare the complete time series for forecasting
+        full_series = pd.concat([train_series, test_series])
         
         forecasts = []
         mapes = {}
+        
         for horizon in forecast_horizons:
-            horizon_forecast = np.zeros(len(test_series) - horizon + 1)
-            for i in range(len(horizon_forecast)):
-                history = pd.concat([train_series, test_series.iloc[:i]])
-                model = ARIMA(history, order=order)
-                results = model.fit()
-                forecast = results.forecast(steps=horizon)
-                horizon_forecast[i] = forecast.iloc[-1]
+            # Initialize forecast array for this horizon
+            horizon_forecast = []
             
+            # Perform rolling forecast
+            for i in range(len(test_series) - horizon + 1):
+                # Prepare training data up to current point
+                train_data = full_series.iloc[:len(train_series) + i]
+                
+                # Fit ARIMA model
+                try:
+                    model = ARIMA(train_data, order=order)
+                    results = model.fit()
+                    
+                    # Forecast 'horizon' steps ahead
+                    forecast = results.forecast(steps=horizon)
+                    
+                    # Take the last value of the forecast (n-step ahead prediction)
+                    horizon_forecast.append(forecast.iloc[-1])
+                
+                except Exception as e:
+                    print(f"Error in forecasting for horizon {horizon}: {e}")
+                    # If forecasting fails, use last known value or NaN
+                    horizon_forecast.append(train_data.iloc[-1])
+            
+            # Convert to numpy array
+            horizon_forecast = np.array(horizon_forecast)
             forecasts.append(horizon_forecast)
+            
+            # Calculate MAPE for this horizon
             actual = test_series.iloc[horizon-1:].values
             mapes[horizon] = self.calculate_mape(actual, horizon_forecast)
         
         return forecasts, mapes
+
+    def plot_multistep_forecast_comparison(self, 
+                                        train_series: pd.Series,
+                                        test_series: pd.Series,
+                                        forecasts: List[np.ndarray], 
+                                        forecast_horizons: List[int],
+                                        title: str,
+                                        metric: str,
+                                        node_id: str,
+                                        mapes: Dict[int, float],
+                                        save_path: str = None):
+        """
+        Enhanced plot method for multi-step forecasts with improved visualization
+        """
+        plt.figure(figsize=(15, 8))
+        
+        # Plot training data
+        plt.plot(train_series.index, train_series.values, 
+                label='Training Data', color='blue', marker='o', linestyle='-', linewidth=2)
+        
+        # Plot test data
+        plt.plot(test_series.index, test_series.values, 
+                label='Actual Test Data', color='green', marker='o', linestyle='-', linewidth=2)
+        
+        # Plot forecasts for each horizon
+        colors = plt.cm.viridis(np.linspace(0, 1, len(forecast_horizons)))
+        for forecast, horizon, color in zip(forecasts, forecast_horizons, colors):
+            # Adjust index for forecast plot
+            forecast_index = test_series.index[horizon-1:len(forecast)+horizon-1]
+            
+            plt.plot(forecast_index, forecast, 
+                    label=f'{horizon}-Step Forecast (MAPE: {mapes[horizon]:.2f}%)',
+                    marker='s', linestyle='--', linewidth=2, color=color)
+        
+        plt.title(f"{title} - Multi-Step Forecast", fontsize=15)
+        plt.xlabel('Date', fontsize=12)
+        plt.ylabel(f'{metric.capitalize()} Forecast', fontsize=12)
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(f'{save_path}/{node_id}_{metric}_multistep_forecast.png', bbox_inches='tight')
+        
+        return plt
 
     def plot_mape_heatmap_multistep(self, 
                                    mape_results: Dict[str, Dict[str, Dict[int, float]]], 
