@@ -1,0 +1,2 @@
+timestamp,period,total_nodes,total_edges,suppliers_count,warehouses_count,lam_warehouse_count,supplier_warehouse_count,subassembly_warehouse_count,facilities_count,external_facility_count,lam_facility_count,parts_count,raw_part_count,subassembly_part_count
+20240101,0,1025,4488,100,149,37,60,52,300,210,90,450,360,90
