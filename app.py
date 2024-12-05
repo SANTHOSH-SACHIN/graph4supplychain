@@ -203,12 +203,19 @@ def train_multistep_regression(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cpu",
+    device="cuda",
     patience=5,
 ):
-    best_test_loss = float("inf")
+    st.subheader("Training Progress . . .")
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
+    best_test_r2 = -float("inf")
+    best_test_mae = float("inf")
     patience_counter = 0
     best_state = None
+    epoch_losses = []
+    epoch_r2_scores = []
 
     for epoch in range(num_epochs):
         epoch_train_loss = 0.0
@@ -288,9 +295,13 @@ def train_multistep_regression(
         avg_test_loss = epoch_test_loss / graph_count
         avg_test_mae = epoch_test_mae / graph_count
 
+        epoch_losses.append(avg_test_loss)
+        epoch_r2_scores.append(avg_test_r2)
+
         # Check for improvement
-        if avg_test_loss < best_test_loss:
-            best_test_loss = avg_test_loss
+        if avg_test_loss < best_test_mae:
+            best_test_mae = avg_test_loss
+            best_test_r2 = avg_test_r2
             best_state = model.state_dict().copy()
             patience_counter = 0
         else:
@@ -301,21 +312,16 @@ def train_multistep_regression(
             st.write(f"Early stopping triggered at epoch {epoch + 1}")
             break
 
-        # Print epoch metrics
-        st.write(f"Epoch {epoch + 1}/{num_epochs}")
-        st.write(
-            f"Train Loss: {avg_train_loss:.4f}, Train MAE: {avg_train_mae:.4f}, Train R²: {avg_train_r2:.4f}"
+        # Update progress bar
+        progress_bar.progress((epoch + 1) / num_epochs)
+        status_text.text(
+            f"Epoch {epoch + 1}/{num_epochs} - Train Loss: {avg_train_loss**0.5:.4f}, Train R²: {avg_test_r2:.4f}"
         )
-        st.write(
-            f"Test Loss: {avg_test_loss:.4f}, Test MAE: {avg_test_mae:.4f}, Test R²: {avg_test_r2:.4f}"
-        )
-        st.write("----------------------------------------")
 
     # Load best model
     if best_state:
         model.load_state_dict(best_state)
-    return model, best_test_loss
-
+    return model, best_test_r2, best_test_mae, epoch_losses, epoch_r2_scores
 
 def train_multistep_classification(
     num_epochs,
@@ -324,13 +330,19 @@ def train_multistep_classification(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cpu",
+    device="cuda",
     patience=5,
 ):
+    st.subheader("Multistep Classification Training Progress")
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
     best_test_accuracy = 0.0
     best_test_loss = float("inf")
     patience_counter = 0
     best_state = None
+    epoch_losses = []
+    epoch_accuracies = []
 
     for epoch in range(num_epochs):
         epoch_train_loss = 0.0
@@ -392,6 +404,10 @@ def train_multistep_classification(
         avg_test_loss = epoch_test_loss / graph_count
         avg_test_accuracy = epoch_test_accuracy / graph_count
 
+        # Store epoch metrics
+        epoch_losses.append(avg_test_loss)
+        epoch_accuracies.append(avg_test_accuracy)
+
         # Check for improvement
         if avg_test_loss < best_test_loss:
             best_test_loss = avg_test_loss
@@ -406,21 +422,17 @@ def train_multistep_classification(
             st.write(f"Early stopping triggered at epoch {epoch + 1}")
             break
 
-        # Print epoch metrics
-        st.write(f"Epoch {epoch + 1}/{num_epochs}")
-        st.write(
-            f"Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.4f}"
+        # Update progress bar and status
+        progress_bar.progress((epoch + 1) / num_epochs)
+        status_text.text(
+            f"Epoch {epoch + 1}/{num_epochs} - Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.4f}"
         )
-        st.write(
-            f"Test Loss: {avg_test_loss:.4f}, Test Accuracy: {avg_test_accuracy:.4f}"
-        )
-        st.write("----------------------------------------")
 
     # Load best model
     if best_state:
         model.load_state_dict(best_state)
-    return model, best_test_accuracy
 
+    return model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies
 
 class Model3(torch.nn.Module):
     def __init__(self, hidden_channels, out_channels, num_parts, G=None):
@@ -481,7 +493,7 @@ def train_bottleneck(
     loss_fn,
     temporal_graphs,
     label="FACILITY",
-    device="cpu",
+    device="cuda",
     patience=5,
 ):
     st.subheader("Training Progress . . .")
@@ -590,7 +602,7 @@ def train_classification(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cpu",
+    device="cuda",
     patience=5,
 ):
     st.subheader("Training Progress . . .")
@@ -697,7 +709,7 @@ def train_regression(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cpu",
+    device="cuda",
     patience=5,
 ):
     st.subheader("Training Progress . . .")
@@ -1006,11 +1018,11 @@ def main():
         "Select Task",
         [
             "Time Series Forecasting",
-            "Single Step GNN"
-            # "Multi Step GNN",
-            # "Bottleneck Detection",
-            # "Hybrid Model",
-            # "Parts Analysis",
+            "Single Step GNN",
+            "Multi Step GNN",
+            "Bottleneck Detection",
+            "Hybrid Model",
+            "Parts Analysis",
         ],
     )
 
@@ -1357,6 +1369,12 @@ def main():
                 help="Number of hidden channels in the graph neural network",
             )
 
+            # Device for training Radio Button
+            device = st.sidebar.radio(
+            "Select Data Source", ["cpu", "cuda"]
+            )
+
+
             num_epochs = st.number_input(
                 "Number of Epochs",
                 min_value=1,
@@ -1441,7 +1459,7 @@ def main():
                 )
 
                 # Move model to appropriate device
-                device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
                 model = model.to(device)
 
                 # Configure optimizer and loss function
@@ -1616,6 +1634,8 @@ def main():
                         yaxis_title="R² Score",
                     )
                     st.plotly_chart(fig_r2)
+            
+            
             except Exception as e:
                 st.error(f"An error occurred during training: {str(e)}")
                 print(str(e))
@@ -1677,6 +1697,10 @@ def main():
                 max_value=256,
                 value=64,
                 help="Number of hidden channels in the graph neural network",
+            )
+
+            device = st.radio(
+                "Select Data Source", ["cpu", "cuda"]
             )
 
             num_epochs = st.number_input(
@@ -1756,7 +1780,7 @@ def main():
 
                 # st.write(G)
                 # Initialize model
-                device = "cpu"
+                # device = "cpu"
                 model = MultiStepModel(
                     hidden_channels=hidden_channels,
                     out_channels=(
@@ -1772,25 +1796,90 @@ def main():
                 loss_fn = (
                     F.cross_entropy if task_type == "Classification" else nn.MSELoss()
                 )
-
+                
                 if task_type == "Classification":
-                    trained_model, best_accuracy = trained_model, best_accuracy = (
-                        train_multistep_classification(
-                            num_epochs=num_epochs,
-                            model=model,
-                            optimizer=optimizer,
-                            loss_fn=loss_fn,
-                            temporal_graphs=hetero_obj,
-                            label="PARTS",
-                            device="cpu",
-                            patience=100,
-                        )
+                    trained_model,best_test_accuracy,best_test_loss,epoch_losses,epoch_accuracies = train_multistep_classification(
+                        num_epochs=num_epochs,
+                        model=model,
+                        optimizer=optimizer,
+                        loss_fn=loss_fn,
+                        temporal_graphs=hetero_obj,
+                        label="PARTS",
+                        device=device,
+                        patience=100,
                     )
+                
                     download_model_button(
                         trained_model, filename="MultiStepGNNClassification.pth"
                     )
+
+                    st.subheader("Model Performance Dashboard")
+
+                    st.markdown(
+                    """
+                    <style>
+                    .metric-card {
+                        
+                        padding: 20px;
+                        border-radius: 10px;
+                        margin: 10px;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                        transition: transform 0.3s ease-in-out;
+                    }
+                    .metric-card:hover {
+                        transform: scale(1.05);
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                    )
+
+                    col1, col2 = st.columns(2)
+                    col1.markdown(
+                        f"<div class='metric-card'><h3>Accuracy</h3><p>{best_test_accuracy:.4f}</p></div>",
+                        unsafe_allow_html=True,
+                    )
+                    col2.markdown(
+                        f"<div class='metric-card'><h3>Loss</h3><p>{best_test_loss:.4f}</p></div>",
+                        unsafe_allow_html=True,
+                    )
+
+                    # Plot performance graph for loss
+                    fig_loss = go.Figure()
+                    fig_loss.add_trace(
+                        go.Scatter(
+                            x=list(range(len(epoch_losses))),
+                            y=epoch_losses,
+                            mode="lines+markers",
+                            name="Loss",
+                        )
+                    )
+                    fig_loss.update_layout(
+                        title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
+                    )
+                    st.plotly_chart(fig_loss)
+
+                    # Plot performance graph for accuracy
+                    fig_accuracy = go.Figure()
+                    fig_accuracy.add_trace(
+                        go.Scatter(
+                            x=list(range(len(epoch_accuracies))),
+                            y=epoch_accuracies,
+                            mode="lines+markers",
+                            name="Accuracy",
+                        )
+                    )
+                    fig_accuracy.update_layout(
+                        title="Epoch-wise Accuracy",
+                        xaxis_title="Epoch",
+                        yaxis_title="Accuracy",
+                    )
+                    st.plotly_chart(fig_accuracy)
+
+
+
                 else:
-                    trained_model, best_test_mae = train_multistep_regression(
+                    trained_model,best_test_r2,best_test_mae,epoch_losses,epoch_r2_scores = train_multistep_regression(
                         num_epochs,
                         model,
                         optimizer,
@@ -1803,6 +1892,48 @@ def main():
                     download_model_button(
                         trained_model, filename="MultiStepGNNRegression.pth"
                     )
+                    col1, col2 = st.columns(2)
+                    col1.markdown(
+                        f"<div class='metric-card'><h3>R² Score</h3><p>{best_test_r2:.4f}</p></div>",
+                        unsafe_allow_html=True,
+                    )
+                    col2.markdown(
+                        f"<div class='metric-card'><h3>MAE</h3><p>{best_test_mae:.4f}</p></div>",
+                        unsafe_allow_html=True,
+                    )
+
+                    # Plot performance graph for loss
+                    fig_loss = go.Figure()
+                    fig_loss.add_trace(
+                        go.Scatter(
+                            x=list(range(len(epoch_losses))),
+                            y=epoch_losses,
+                            mode="lines+markers",
+                            name="Loss",
+                        )
+                    )
+                    fig_loss.update_layout(
+                        title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
+                    )
+                    st.plotly_chart(fig_loss)
+
+                    # Plot performance graph for R² score
+                    fig_r2 = go.Figure()
+                    fig_r2.add_trace(
+                        go.Scatter(
+                            x=list(range(len(epoch_r2_scores))),
+                            y=epoch_r2_scores,
+                            mode="lines+markers",
+                            name="R² Score",
+                        )
+                    )
+                    fig_r2.update_layout(
+                        title="Epoch-wise R² Score",
+                        xaxis_title="Epoch",
+                        yaxis_title="R² Score",
+                    )
+                    st.plotly_chart(fig_r2)
+            
 
             except Exception as e:
                 st.error(f"An error occurred during training: {str(e)}")
@@ -1857,7 +1988,9 @@ def main():
                 value=64,
                 help="Number of hidden channels in the graph neural network",
             )
-
+            device = st.radio (
+                "Select Data Source", ["cpu", "cuda"]
+            )
             num_epochs = st.number_input(
                 "Number of Epochs",
                 min_value=1,
@@ -1931,7 +2064,7 @@ def main():
                 )
 
                 # Move model to appropriate device
-                device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
                 model = model.to(device)
 
                 # Configure optimizer and loss function
