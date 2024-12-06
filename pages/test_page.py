@@ -34,7 +34,7 @@ with st.sidebar.expander("Parse data", expanded=True):
     multistep = st.selectbox("Multistep", options=[True, False], index=1)
     out_steps = 1 if not multistep else st.number_input("Output steps:", min_value=1, value=3)
 
-    task = st.selectbox("Task type:", options=['bd', 'df'], index=1)
+    task = st.selectbox("Task type:", options=['df'], index=0)
     threshold = st.number_input("Threshold:", min_value=1, value=10)
     test_parser.validate_parser()
     st.success("CSV data converted to JSON format")

@@ -151,12 +151,8 @@ if not use_local_files:
         # Initialize model
         model = Model3(
             hidden_channels=hidden_channels,
-            out_channels=(
-                1
-                if task_type == "Regression"
-                else len(temporal_graphs[1][1]["PARTS"].y)
-            ),
-            num_parts=len(temporal_graphs[1][1]["PARTS"].y),
+            out_channels=G.num_classes,
+            max_num_parts=G.num_nodes,
             G=G,
         )
 

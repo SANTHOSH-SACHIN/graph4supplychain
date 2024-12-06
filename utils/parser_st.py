@@ -697,6 +697,12 @@ class TemporalHeterogeneousGraphParser:
             hetero_data = self.add_dummy_edge(hetero_data, "PRODUCT_FAMILY", "To", "BUSINESS_GROUP")
             
             hetero_data = self.set_dict_values(hetero_data)
+
+            if regression:
+                hetero_data.num_classes = 1
+            else:
+                hetero_data.num_classes = self.num_classes
+
             if task =='df':
                 hetero_data = self.set_mask(hetero_data, 'PARTS')
             else:
