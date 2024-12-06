@@ -77,6 +77,9 @@ with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
     device = st.sidebar.radio(
     "Select Data Source", ["cpu", "cuda"]
     )
+    task_forecast = st.sidebar.radio(
+    "Select Task", ["df", "bd"]
+    )
 
 
     num_epochs = st.number_input(
@@ -141,19 +144,19 @@ if not use_local_files:
             regression=regression_flag,
             out_steps=3,
             multistep=False,
-            task="df",
+            task=task_forecast,
             threshold=10,
         )
 
         # Select the graph (e.g., at time step 10)
-        G = temporal_graphs[len(temporal_graphs) - 1][1]
+        G = temporal_graphs[len(temporal_graphs)][1]
 
         # Initialize model
         model = Model3(
             hidden_channels=hidden_channels,
             out_channels=G.num_classes,
             max_num_parts=G.num_nodes,
-            G=G,
+            G=G
         )
 
         # Move model to appropriate device
@@ -193,22 +196,40 @@ if not use_local_files:
             )
 
         else:
-            (
-                trained_model,
-                best_test_r2,
-                best_test_mae,
-                epoch_losses,
-                epoch_r2_scores,
-            ) = train_regression(
-                num_epochs,
-                model,
-                optimizer,
-                loss_fn,
-                temporal_graphs,
-                label="PARTS",
-                device=device,
-                patience=patience,
-            )
+            if task_forecast is "df":
+                (
+                    trained_model,
+                    best_test_r2,
+                    best_test_mae,
+                    epoch_losses,
+                    epoch_r2_scores,
+                ) = train_regression(
+                    num_epochs,
+                    model,
+                    optimizer,
+                    loss_fn,
+                    temporal_graphs,
+                    label="PARTS",
+                    device=device,
+                    patience=patience,
+                )
+            else:
+                (
+                    trained_model,
+                    best_test_r2,
+                    best_test_mae,
+                    epoch_losses,
+                    epoch_r2_scores,
+                ) = train_regression(
+                    num_epochs,
+                    model,
+                    optimizer,
+                    loss_fn,
+                    temporal_graphs,
+                    label="FACILITY",
+                    device=device,
+                    patience=patience,
+                )
             download_model_button(
                 trained_model, filename="SingleStepGNNRegression.pth"
             )

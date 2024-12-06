@@ -147,7 +147,7 @@ if train_button:
             threshold=10,
         )
 
-        G = temporal_graphs[len(temporal_graphs) - 1][1]
+        G = temporal_graphs[len(temporal_graphs)][1]
 
         # st.write(G)
         # Initialize model

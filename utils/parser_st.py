@@ -41,6 +41,7 @@ class TemporalHeterogeneousGraphParser:
         self.class_ranges = {}
 
         self.df = None
+        self.po_df = None
         self.df_date = None
         self.df_dict={}
         
@@ -124,6 +125,8 @@ class TemporalHeterogeneousGraphParser:
 
     def get_df(self):
         return self.df
+    def get_po_df(self):
+        return self.po_df
 
     def get_date_df(self):
         return self.df_date
@@ -137,6 +140,16 @@ class TemporalHeterogeneousGraphParser:
             self.df = new_row
         else:
             self.df = pd.concat([self.df, new_row])
+
+    def set_po_df(self, timestamp):
+        base = pd.Timestamp(self.metadata['base_date'])  
+        date = (base + timedelta(days=timestamp)).strftime('%Y-%m-%d') 
+        val1_dict = {key: val[0] for key, val in self.po_demand.items()} 
+        new_row = pd.DataFrame([val1_dict], index=[date])
+        if self.po_df is None:
+            self.po_df = new_row
+        else:
+            self.po_df = pd.concat([self.po_df, new_row]) 
 
     def set_date_df(self, timestamp, data):
         base = pd.Timestamp(self.metadata['base_date'])
@@ -454,6 +467,7 @@ class TemporalHeterogeneousGraphParser:
             
             self.demand = demand
             self.demand_facility = demand_facility
+            self.po_demand = po_demand
             self.bottle_neck = bottle_neck
             self.list_pop = list_pop
             self.facility_supply = supply
@@ -507,7 +521,7 @@ class TemporalHeterogeneousGraphParser:
                             y.append(self.get_y(self.demand[node_id]))
                 elif task=='bd':
                     if node_type == 'FACILITY':
-                        y.append(self.bottle_neck[node_id])
+                        y.append(self.demand_facility[node_id])
             
             hetero_data[node_type].node_id = n_id
             hetero_data[node_type].x = torch.tensor(n_feat, dtype=torch.float)
@@ -710,6 +724,7 @@ class TemporalHeterogeneousGraphParser:
             temporal_graphs[timestamp] = (graph_nx, hetero_data)
 
             self.set_df(timestamp)
+            self.set_po_df(timestamp)
 
         self.set_extended_df(json, 'PARTS')
         hetero_list = copy.deepcopy(temporal_graphs)
