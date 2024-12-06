@@ -838,14 +838,14 @@ def test_single_step_classification(model, temporal_graphs, loss_fn, label="PART
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
+            # test_mask = G[label]["test_mask"]
             
             out = model(G.x_dict, G.edge_index_dict, len(G[label].y),label, G.edge_attr)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+            test_loss = loss_fn(out, G[label].y)
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].argmax(dim=1).cpu()
-            test_true = G[label].y[test_mask].cpu()
+            test_pred = out.argmax(dim=1).cpu()
+            test_true = G[label].y.cpu()
             total_correct += (test_pred == test_true).sum().item()
             total_samples += len(test_true)
 
@@ -863,14 +863,14 @@ def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", de
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
+            # test_mask = G[label]["test_mask"]
             out = model(G.x_dict, G.edge_index_dict).squeeze(1)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+            test_loss = loss_fn(out, G[label].y)
 
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].cpu().numpy()
-            test_true = G[label].y[test_mask].cpu().numpy()
+            test_pred = out.cpu().numpy()
+            test_true = G[label].y.cpu().numpy()
             test_pred_all.append(test_pred)
             test_true_all.append(test_true)
 
@@ -893,13 +893,13 @@ def test_multistep_classification(model, temporal_graphs, loss_fn, label="PARTS"
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
+            # test_mask = G[label]["test_mask"]
             out = model(G.x_dict, G.edge_index_dict, G.edge_attr)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+            test_loss = loss_fn(out, G[label].y)
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].argmax(dim=1).cpu()
-            test_true = G[label].y[test_mask].cpu()
+            test_pred = out.argmax(dim=1).cpu()
+            test_true = G[label].y.cpu()
             total_correct += (test_pred == test_true).sum().item()
             total_samples += len(test_true)
 
