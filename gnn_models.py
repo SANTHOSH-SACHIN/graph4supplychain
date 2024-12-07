@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Dict, List, Tuple
 import warnings
+from torch_geometric.nn import global_mean_pool
 
 warnings.filterwarnings("ignore")
 from dotenv import load_dotenv
@@ -100,30 +101,30 @@ class BottleneckDecoder(torch.nn.Module):
 
 
 class GRUDecoder(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, num_parts, hidden_gru=64):
+    def __init__(self, in_channels, out_channels, max_num_parts, hidden_gru=64):
         super().__init__()
         hidden_layers = [128, 64, 32]
 
         self.part_grus = nn.ModuleList(
             [
                 nn.GRU(in_channels, hidden_gru, batch_first=True)
-                for _ in range(num_parts)
+                for _ in range(max_num_parts)
             ]
         )
 
         self.part_mlps = nn.ModuleList(
-            [MLP(hidden_gru, hidden_layers, out_channels) for _ in range(num_parts)]
+            [MLP(hidden_gru, hidden_layers, out_channels) for _ in range(max_num_parts)]
         )
 
-        self.num_parts = num_parts
+
         self.in_channels = in_channels
         self.hidden_gru = hidden_gru
 
-    def forward(self, z_dict):
-        z = z_dict["PARTS"]
+    def forward(self, z_dict, num_parts, label):
+        z = z_dict[label]
         outputs = []
 
-        for part_idx in range(self.num_parts):
+        for part_idx in range(num_parts):
             part_embedding = z[part_idx].unsqueeze(0).unsqueeze(0)
             gru_out, _ = self.part_grus[part_idx](part_embedding)
             part_output = self.part_mlps[part_idx](gru_out.squeeze())
@@ -417,7 +418,7 @@ def train_multistep_classification(
     return model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies
 
 class Model3(torch.nn.Module):
-    def __init__(self, hidden_channels, out_channels, num_parts, G=None):
+    def __init__(self, hidden_channels, out_channels, max_num_parts, G=None):
         super().__init__()
         # Dynamically choose encoder based on user configuration
         self.encoder_type = st.session_state.get("encoder_type", "SAGEConv")
@@ -432,14 +433,14 @@ class Model3(torch.nn.Module):
         if G is not None:
             self.encoder = to_hetero(self.encoder, G.metadata(), aggr="mean")
 
-        self.decoder = GRUDecoder(hidden_channels, out_channels, num_parts)
+        self.decoder = GRUDecoder(hidden_channels, out_channels, max_num_parts)
 
-    def forward(self, x_dict, edge_index_dict, edge_attr=None):
+    def forward(self, x_dict, edge_index_dict, num_parts, label, edge_attr=None):
         if self.encoder_type == "SAGEConv":
             z_dict = self.encoder(x_dict, edge_index_dict)
         else:
             z_dict = self.encoder(x_dict, edge_index_dict, edge_attr)
-        return self.decoder(z_dict)
+        return self.decoder(z_dict, num_parts, label)
 
 
 class Bottleneck_Model(torch.nn.Module):
@@ -613,8 +614,8 @@ def train_classification(
             optimizer.zero_grad()
 
             # Forward pass
-            out = model(G.x_dict, G.edge_index_dict, G.edge_attr)
-
+            out = model(G.x_dict, G.edge_index_dict,len(G[label].y),label, G.edge_attr)
+            print(out.shape)
             # Get training masks and compute loss
             train_mask = G[label]["train_mask"]
             train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
@@ -724,7 +725,7 @@ def train_regression(
             optimizer.zero_grad()
 
             # Forward pass
-            out = model(G.x_dict, G.edge_index_dict, G.edge_attr).squeeze(-1)
+            out = model(G.x_dict, G.edge_index_dict, len(G[label].y),label, G.edge_attr).squeeze(-1)
 
             # Get training masks and compute loss
             train_mask = G[label]["train_mask"]
@@ -808,13 +809,13 @@ def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", 
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
-            out = model(G.x_dict, G.edge_index_dict).squeeze(-1)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+            test_mask = G[label]
+            out = model(G.x_dict, G.edge_index_dict, len(G[label].y),label, G.edge_attr).squeeze(-1)
+            test_loss = loss_fn(out, G[label].y)
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].cpu().numpy()
-            test_true = G[label].y[test_mask].cpu().numpy()
+            test_pred = out.cpu().numpy()
+            test_true = G[label].y.cpu().numpy()
             test_pred_all.append(test_pred)
             test_true_all.append(test_true)
 
@@ -823,7 +824,7 @@ def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", 
     r2 = r2_score(test_true_all, test_pred_all)
     mae = mean_absolute_error(test_true_all, test_pred_all)
 
-    return {"R2": r2, "MAE": mae, "Loss": total_loss / len(temporal_graphs)}
+    return {"R2": r2, "MAE": mae, "Loss": total_loss / len(temporal_graphs), "Predictions":test_pred_all}
 
 
 def test_single_step_classification(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
@@ -837,13 +838,14 @@ def test_single_step_classification(model, temporal_graphs, loss_fn, label="PART
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
-            out = model(G.x_dict, G.edge_index_dict, G.edge_attr)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+            # test_mask = G[label]["test_mask"]
+            
+            out = model(G.x_dict, G.edge_index_dict, len(G[label].y),label, G.edge_attr)
+            test_loss = loss_fn(out, G[label].y)
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].argmax(dim=1).cpu()
-            test_true = G[label].y[test_mask].cpu()
+            test_pred = out.argmax(dim=1).cpu()
+            test_true = G[label].y.cpu()
             total_correct += (test_pred == test_true).sum().item()
             total_samples += len(test_true)
 
@@ -861,15 +863,14 @@ def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", de
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
-            out = model(G.x_dict, G.edge_index_dict).squeeze(-1)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
-            print(out[test_mask].shape)
-            print(G[label].y[test_mask].shape)
+            # test_mask = G[label]["test_mask"]
+            out = model(G.x_dict, G.edge_index_dict).squeeze(1)
+            test_loss = loss_fn(out, G[label].y)
+
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].cpu().numpy()
-            test_true = G[label].y[test_mask].cpu().numpy()
+            test_pred = out.cpu().numpy()
+            test_true = G[label].y.cpu().numpy()
             test_pred_all.append(test_pred)
             test_true_all.append(test_true)
 
@@ -892,13 +893,13 @@ def test_multistep_classification(model, temporal_graphs, loss_fn, label="PARTS"
     with torch.no_grad():
         for row in temporal_graphs:
             G = temporal_graphs[row][1]
-            test_mask = G[label]["test_mask"]
+            # test_mask = G[label]["test_mask"]
             out = model(G.x_dict, G.edge_index_dict, G.edge_attr)
-            test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
+            test_loss = loss_fn(out, G[label].y)
             total_loss += test_loss.item()
 
-            test_pred = out[test_mask].argmax(dim=1).cpu()
-            test_true = G[label].y[test_mask].cpu()
+            test_pred = out.argmax(dim=1).cpu()
+            test_true = G[label].y.cpu()
             total_correct += (test_pred == test_true).sum().item()
             total_samples += len(test_true)
 

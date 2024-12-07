@@ -147,18 +147,14 @@ if train_button:
             threshold=10,
         )
 
-        G = temporal_graphs[len(temporal_graphs) - 1][1]
+        G = temporal_graphs[len(temporal_graphs)][1]
 
         # st.write(G)
         # Initialize model
         # device = "cpu"
         model = MultiStepModel(
             hidden_channels=hidden_channels,
-            out_channels=(
-                1
-                if task_type == "Regression"
-                else len(temporal_graphs[1][1]["PARTS"].y)
-            ),
+            out_channels=G.num_classes,
             G=G,
             out_steps=out_steps,
         ).to(device)
