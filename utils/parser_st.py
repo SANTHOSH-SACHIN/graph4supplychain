@@ -22,9 +22,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from torch_geometric.nn.conv import GATConv , SAGEConv
 from datetime import timedelta
 import copy
+import random
 
 class TemporalHeterogeneousGraphParser:
-    def __init__(self, base_url, version, headers,meta_data_path, use_local_files=False, local_dir=None,  num_classes =20):
+    def __init__(self, base_url, version, headers,meta_data_path, use_local_files=False, local_dir=None,  num_classes =20, num_quartiles=4):
         self.base_url = base_url
         self.version = version
         self.headers = headers
@@ -44,6 +45,9 @@ class TemporalHeterogeneousGraphParser:
         self.po_df = None
         self.df_date = None
         self.df_dict={}
+        
+        self.parts_dict = {}
+        self.num_quartiles = num_quartiles
         
         if use_local_files and not local_dir:
             raise ValueError("Local directory must be specified when use_local_files is True.")
@@ -313,7 +317,6 @@ class TemporalHeterogeneousGraphParser:
                     temporal_y = torch.zeros((num_nodes, out_steps), 
                                              device=graph[node_type]['y'].device, 
                                              dtype=original_dtype)  # Retain the dtype
-    
                     latest_y = graph[node_type]['y']
                     for step in range(out_steps):
                         next_ts = ts + step  
@@ -475,7 +478,7 @@ class TemporalHeterogeneousGraphParser:
 
 
 
-    def parse_json_to_graph(self, data, timestamp, regression, multistep, task):
+    def parse_json_to_graph(self, data, timestamp, regression, multistep, task, q=None):
         hetero_data = HeteroData()
         graph_nx = nx.DiGraph() if data['directed'] else nx.Graph()
         
@@ -486,6 +489,20 @@ class TemporalHeterogeneousGraphParser:
         label = {}
         edge_features = {}
         edge_index = {}
+        allowed_nodes=[]
+        if q is not None and task=='df':
+            allowed_nodes = self.part_split_dict[q]
+            for node_type, attributes in data['node_types'].items():
+                if node_type=='PARTS':
+                    continue
+                for node in data['node_values'][node_type]:
+                    node_id = node[self.get_node_index(node_type, "id")]
+                    allowed_nodes.append(node_id)
+        else:
+            for node_type, attributes in data['node_types'].items():
+                for node in data['node_values'][node_type]:
+                    node_id = node[self.get_node_index(node_type, "id")]
+                    allowed_nodes.append(node_id)
 
         # Add nodes
         for node_type, attributes in data['node_types'].items():
@@ -499,6 +516,9 @@ class TemporalHeterogeneousGraphParser:
             
             for node in data['node_values'][node_type]:
                 node_id = node[self.get_node_index(node_type, "id")]
+                if node_id not in allowed_nodes:
+                    self.list_pop.append(node_id)
+                    continue
                 if node_id in self.list_pop:
                     continue
                 attr_dict = dict(zip(attributes, node))
@@ -641,99 +661,53 @@ class TemporalHeterogeneousGraphParser:
         return g
 
 
-    def add_dummy_edge(self, g, src, rel, dst):
-        n_src = len(g[src]['x']) # node_id: [0..n_src]
-        n_dst = len(g[dst]['x']) # node_id: [0..n_dst]
+    def randomize_values(self, d):
+        for key in d:
+            d[key] = random.randint(0, 2000)
+        return d
 
-        unconnected_dst_nodes = set(range(n_dst))
-        
-        additional_src_nodes = []
-        additional_dst_nodes = []
-        
-        for unconnected_dst in unconnected_dst_nodes:
-            random_src = torch.randint(0, n_src, (1,)).item()  # Randomly select a source node
-            additional_src_nodes.append(random_src)
-            additional_dst_nodes.append(unconnected_dst)
+    def segregate_by_quantiles(self, d, num_quartiles=4):
+        keys = list(d.keys())
+        values = np.array([d[k] for k in keys])
+        percentiles = [(100 / num_quartiles) * i for i in range(1, num_quartiles)]
+        cuts = np.percentile(values, percentiles)
+        qdict = {f"q{i}": [] for i in range(1, num_quartiles + 1)}
+        for k in keys:
+            v = d[k]
+            quantile_index = 1  # Start from the first quantile
+            for cutoff in cuts:
+                if v <= cutoff:
+                    break
+                quantile_index += 1
+            qdict[f"q{quantile_index}"].append(k)
+        return qdict
+
+    def sparsity_dict(self, data, timestamp):
+        for edge in data['link_values']:
+            if 'PARTSToFACILITY' in edge:
+                quantity = edge[self.get_edge_index('PARTSToFACILITY', 'quantity')]
+                src = edge[self.get_edge_index('PARTSToFACILITY', 'source')]
+                tgt = edge[self.get_edge_index('PARTSToFACILITY', 'target')]
+                if src in self.parts_dict:
+                    if tgt in self.parts_dict[src]:
+                        self.parts_dict[src][tgt].append(quantity)
+                    else:
+                         self.parts_dict[src][tgt] = [quantity]
+                else:
+                    self.parts_dict[src] = {tgt:[quantity]}
+        parts_variation={}
+        for part in self.parts_dict:
+            total = 0
             
-        if additional_src_nodes and additional_dst_nodes:
-            new_edges = torch.tensor([additional_src_nodes, additional_dst_nodes])
-            g[src, rel, dst].edge_index = new_edges
+            for tgt in self.parts_dict[part]:
+                nums = self.parts_dict[part][tgt]
+                for i in range(1, len(nums)):
+                    total += abs(nums[i] - nums[i-1])
+                    
+            parts_variation[part] = int(total)
             
-            num_new_edges = new_edges.shape[1]
-            new_edge_attr = torch.zeros((num_new_edges, 1))
-            g[src, rel, dst].edge_attr = new_edge_attr
-
-        return g
-
-    def create_classes(self, num_classes, demand_values):
-        demand_values = np.array(list(demand_values.values()))
-        percentiles = np.linspace(0, 100, num_classes + 1)
-        class_boundaries = np.percentile(demand_values, percentiles)
-        self.class_ranges = {i: (class_boundaries[i], class_boundaries[i + 1]) 
-                           for i in range(num_classes)}
-    
-
-    def get_y(self, value):
-        for class_index, (lower_bound, upper_bound) in self.class_ranges.items():
-            if lower_bound < value <= upper_bound:
-                return class_index
-        return len(self.class_ranges) - 1
-
-    def create_temporal_graph(self,regression=False, multistep = True, out_steps = 2, task = 'df', threshold=10):
-        self.fetch_timestamps()
-
-        temporal_graphs = {}
-        first_timestamp = True
-        json={}
-        demand={}
-        
-        for timestamp in self.timestamps:
-            data = self.fetch_json(timestamp)
-            
-            self.node_schema = data["node_types"]
-            self.edge_schema = data["relationship_types"]
-        
-            self.set_date_df(timestamp, data)
-            json[timestamp] = data
-            
-            
-            data = self.preprocess(data)
-            self.compute_demand(data, threshold)
-            demand[timestamp] = self.demand
-            
-            if first_timestamp:
-                self.create_classes(self.num_classes, self.demand)
-                first_timestamp = False
-            
-            graph_nx, hetero_data = self.parse_json_to_graph(data, timestamp, regression, multistep, task)
-            
-            hetero_data = self.add_dummy_edge(hetero_data, "WAREHOUSE", "To", "SUPPLIERS")
-            hetero_data = self.add_dummy_edge(hetero_data, "PRODUCT_FAMILY", "To", "BUSINESS_GROUP")
-            
-            hetero_data = self.set_dict_values(hetero_data)
-
-            if regression:
-                hetero_data.num_classes = 1
-            else:
-                hetero_data.num_classes = self.num_classes
-
-            if task =='df':
-                hetero_data = self.set_mask(hetero_data, 'PARTS')
-            else:
-                hetero_data = self.set_mask(hetero_data, 'FACILITY')
-            temporal_graphs[timestamp] = (graph_nx, hetero_data)
-
-            self.set_df(timestamp)
-            self.set_po_df(timestamp)
-
-        self.set_extended_df(json, 'PARTS')
-        hetero_list = copy.deepcopy(temporal_graphs)
-        if multistep:
-            hetero_obj = self.multistep_data(hetero_list, out_steps)
-        else:
-            hetero_obj = temporal_graphs
-        return temporal_graphs, hetero_obj
-        # return 0,1
+        parts_variation = self.randomize_values(parts_variation)
+        self.part_split_dict = self.segregate_by_quantiles(parts_variation, self.num_quartiles)     
 
     def determine_edge_type(self, source, target):
         """
@@ -863,3 +837,99 @@ class TemporalHeterogeneousGraphParser:
             output_path = os.path.join(test_json_path, str(c) + '.json')
             with open(output_path, 'w') as json_file:
                 json.dump(structured_json_dynamic_corrected, json_file, indent=4)
+
+
+    def add_dummy_edge(self, g, src, rel, dst):
+        n_src = len(g[src]['x']) # node_id: [0..n_src]
+        n_dst = len(g[dst]['x']) # node_id: [0..n_dst]
+
+        unconnected_dst_nodes = set(range(n_dst))
+        
+        additional_src_nodes = []
+        additional_dst_nodes = []
+        
+        for unconnected_dst in unconnected_dst_nodes:
+            random_src = torch.randint(0, n_src, (1,)).item()  # Randomly select a source node
+            additional_src_nodes.append(random_src)
+            additional_dst_nodes.append(unconnected_dst)
+            
+        if additional_src_nodes and additional_dst_nodes:
+            new_edges = torch.tensor([additional_src_nodes, additional_dst_nodes])
+            g[src, rel, dst].edge_index = new_edges
+            
+            num_new_edges = new_edges.shape[1]
+            new_edge_attr = torch.zeros((num_new_edges, 1))
+            g[src, rel, dst].edge_attr = new_edge_attr
+
+        return g
+
+    def create_classes(self, num_classes, demand_values):
+        demand_values = np.array(list(demand_values.values()))
+        percentiles = np.linspace(0, 100, num_classes + 1)
+        class_boundaries = np.percentile(demand_values, percentiles)
+        self.class_ranges = {i: (class_boundaries[i], class_boundaries[i + 1]) 
+                           for i in range(num_classes)}
+    
+
+    def get_y(self, value):
+        for class_index, (lower_bound, upper_bound) in self.class_ranges.items():
+            if lower_bound < value <= upper_bound:
+                return class_index
+        return len(self.class_ranges) - 1
+
+    def create_temporal_graph(self,regression=False, multistep = True, out_steps = 2, task = 'df', threshold=10, q=None):
+        self.fetch_timestamps()
+
+        temporal_graphs = {}
+        first_timestamp = True
+        json={}
+        demand={}
+        
+        for timestamp in self.timestamps:
+            data = self.fetch_json(timestamp)
+            
+            self.node_schema = data["node_types"]
+            self.edge_schema = data["relationship_types"]
+        
+            self.set_date_df(timestamp, data)
+            json[timestamp] = data
+            
+            
+            data = self.preprocess(data)
+            self.compute_demand(data, threshold)
+            demand[timestamp] = self.demand
+            
+            if first_timestamp:
+                self.create_classes(self.num_classes, self.demand)
+                first_timestamp = False
+                self.sparsity_dict(data, timestamp)
+                
+            graph_nx, hetero_data = self.parse_json_to_graph(data, timestamp, regression, multistep, task, q)
+            
+            hetero_data = self.add_dummy_edge(hetero_data, "WAREHOUSE", "To", "SUPPLIERS")
+            hetero_data = self.add_dummy_edge(hetero_data, "PRODUCT_FAMILY", "To", "BUSINESS_GROUP")
+            
+            hetero_data = self.set_dict_values(hetero_data)
+
+            if regression:
+                hetero_data.num_classes = 1
+            else:
+                hetero_data.num_classes = self.num_classes
+
+            if task =='df':
+                hetero_data = self.set_mask(hetero_data, 'PARTS')
+            else:
+                hetero_data = self.set_mask(hetero_data, 'FACILITY')
+            temporal_graphs[timestamp] = (graph_nx, hetero_data)
+
+            
+            self.set_df(timestamp)
+            self.set_po_df(timestamp)
+
+        self.set_extended_df(json, 'PARTS')
+        hetero_list = copy.deepcopy(temporal_graphs)
+        if multistep:
+            hetero_obj = self.multistep_data(hetero_list, out_steps)
+        else:
+            hetero_obj = temporal_graphs
+        return temporal_graphs, hetero_obj
