@@ -7,6 +7,8 @@ import warnings
 import matplotlib.pyplot as plt
 import seaborn as sns
 from dateutil.relativedelta import relativedelta
+from prophet.diagnostics import cross_validation, performance_metrics
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_percentage_error
 warnings.filterwarnings('ignore')
 
@@ -84,7 +86,11 @@ class SingleStepProphet:
         if params is None:
             params = {
                 'yearly_seasonality': False,
-                'seasonality_mode': 'additive'
+                'weekly_seasonality': True,
+                'daily_seasonality': False,
+                'seasonality_mode': 'multiplicative',
+                'changepoint_prior_scale': 0.05,  # Flexibility of trend
+                'seasonality_prior_scale': 10     # Flexibility of seasonality
             }
         
         # Prepare data in Prophet format

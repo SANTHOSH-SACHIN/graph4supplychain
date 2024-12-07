@@ -44,8 +44,8 @@ class SingleStepCNNLSTMAnalyzer:
         model = Sequential([
             Conv1D(filters=64, kernel_size=2, activation='relu', input_shape=(lookback, 1)),
             Conv1D(filters=32, kernel_size=2, activation='relu'),
-            LSTM(50, activation='relu', return_sequences=True),
-            LSTM(50, activation='relu'),
+            LSTM(100, activation='tanh', return_sequences=True),
+            LSTM(100, activation='tanh'),
             Dense(25, activation='relu'),
             Dense(1)
         ])

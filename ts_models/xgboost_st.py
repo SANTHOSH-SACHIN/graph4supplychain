@@ -73,7 +73,7 @@ class XGBoostForecaster:
             params = {
                 'objective': 'reg:squarederror',
                 'n_estimators': 100,
-                'learning_rate': 0.1,
+                'learning_rate': 0.01,
                 'max_depth': 5,
                 'min_child_weight': 1
             }

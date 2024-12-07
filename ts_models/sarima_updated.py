@@ -12,8 +12,8 @@ import streamlit as st
 
 def sarima_demand_forecast(train_demand, test_demand, 
                                          order=(1,1,1), 
-                                         seasonal_order=(1,1,1,7), 
-                                         verbose=False):
+                                         seasonal_order=(1,1,1,4), 
+                                         verbose=True):
     """
     Perform single-step demand forecasting using SARIMA model with enhanced visualization.
 
@@ -135,7 +135,7 @@ def sarima_demand_forecast(train_demand, test_demand,
             'plot': plot,
             'model_summary': model_fit.summary() if verbose else None
         }
-        return results
+        return results['forecasts'],results['mape']
     
     except Exception as e:
         print(f"Error during forecasting: {e}")

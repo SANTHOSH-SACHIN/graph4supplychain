@@ -266,19 +266,19 @@ try:
 except Exception as e:
     st.error(f"Error processing data: {str(e)}")
 
-st.subheader("Demand Data Preview")
-st.dataframe(demand_df)
+# st.subheader("Demand Data Preview")
+# st.dataframe(demand_df)
 
-# Model selection and parameters
-model_type = st.sidebar.radio(
-    "Select Model Type", ["ARIMA", "SARIMA", "CNN-LSTM", "XGBoost", "Prophet"]
-)
+analysis_type = st.selectbox("Select Forecasting Type", ["Single-Step", "Multi-Step"])
+
 node_id = st.selectbox("Select Node for Analysis", demand_df.columns)
-analysis_type = st.radio(
-    "Select Forecasting Type", ["Single-Step", "Multi-Step"]
-)
 
-# Model-specific parameters
+if analysis_type == "Single-Step":
+    model_type = st.selectbox("Select a Timeseries Model",["ARIMA", "SARIMA", "CNN-LSTM", "XGBOOST","PROPHET"])
+    
+else:
+    model_type = st.selectbox("Select a Timeseries Model", ["ARIMA","SARIMA","XGBOOST"])
+
 lookback = None
 if model_type == "CNN-LSTM":
     st.sidebar.subheader("CNN-LSTM Parameters")
@@ -291,7 +291,7 @@ elif model_type == "XGBoost":
     n_estimators = st.sidebar.slider("Number of Estimators", 50, 500, 100)
     max_depth = st.sidebar.slider("Max Depth", 3, 10, 6)
     learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, 0.1)
-
+    
 if node_id:
     st.write(f"Analyzing Node: {node_id}")
 
@@ -299,7 +299,7 @@ if node_id:
     train_demand, test_demand = analyzer.models[
         "single_step_arima"
     ].train_test_split(demand_df[node_id])
-
+    
     if analysis_type == "Single-Step":
         st.subheader(f"Single-Step {model_type} Forecasting")
 
@@ -321,17 +321,23 @@ if node_id:
             plt.close()
 
             st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+            
         elif model_type == "SARIMA":
-                    results = sarima_demand_forecast(train_demand,test_demand)
-                    st.subheader(f"Results for {node_id}")
-                    st.write(f"**MAPE**: {results['mape']:.2f}%")
-                    st.write(f"**MAE**: {results['mae']:.2f}")
-                    st.write(f"**RMSE**: {results['rmse']:.2f}")
-            
-                        # Display plot
-                    st.subheader("Forecast Visualization")
-                    st.pyplot(results['plot'])
-            
+            demand_forecast,demand_mape = sarima_demand_forecast(train_demand,test_demand)
+            fig = plot_single_step_forecast(
+            train_demand,
+            test_demand,
+            demand_forecast,
+            model_type,
+            node_id,
+            demand_mape,
+            lookback,
+        )
+            st.pyplot(fig)
+            plt.close()
+
+            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+        
         elif model_type == "CNN-LSTM":
             with st.spinner("Training CNN-LSTM model..."):
                 demand_forecast, demand_mape = analyzer.models[
@@ -358,7 +364,8 @@ if node_id:
                 plt.close()
 
                 st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-        elif model_type == "Prophet":
+                
+        elif model_type == "PROPHET":
             with st.spinner("Training Prophet model..."):
                 demand_forecast, demand_mape = analyzer.models[
                     "single_step_prophet"
@@ -377,6 +384,7 @@ if node_id:
                 plt.close()
 
                 st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+        
         else:  # XGBoost
             with st.spinner("Training XGBoost model..."):
                 demand_forecast, demand_mape = analyzer.models[
@@ -396,36 +404,17 @@ if node_id:
                 plt.close()
 
                 st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-
-        # Plot results
-        # fig = plot_single_step_forecast(
-        #     train_demand,
-        #     test_demand,
-        #     demand_forecast,
-        #     model_type,
-        #     node_id,
-        #     demand_mape,
-        #     lookback,
-        # )
-        # st.pyplot(fig)
-        # plt.close()
-
-        # st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-
+                
     elif analysis_type == "Multi-Step":
         st.subheader(f"Multi-Step {model_type} Forecasting")
-        if model_type == "CNN-LSTM":
-            st.warning(
-                "Multi-step forecasting is not yet implemented for CNN-LSTM model"
-            )
-        else:
-            forecast_horizons = st.multiselect(
+        
+        forecast_horizons = st.multiselect(
                 "Select Forecast Horizons (Steps)",
                 [1, 2, 3, 4, 5, 6],
-                default=[1,3],
+                default=[1],
             )
-
-            if forecast_horizons:
+        
+        if forecast_horizons:
                 if model_type == "ARIMA":
                     forecasts, mapes = analyzer.models['multi_step_arima'].forecast_node_multistep(
                         train_demand, test_demand, forecast_horizons
@@ -449,6 +438,7 @@ if node_id:
                     st.write("MAPE for Each Forecast Horizon:")
                     for horizon, mape in mapes.items():
                         st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
+
                 elif model_type == "SARIMA":
                     forecasts, mapes = forecast_node_multistep_sarima(train_demand,test_demand,forecast_horizons)
                     fig = analyzer.models['multi_step_arima'].plot_multistep_forecast_comparison(
@@ -470,11 +460,7 @@ if node_id:
                     st.write("MAPE for Each Forecast Horizon:")
                     for horizon, mape in mapes.items():
                             st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
-                    
-                elif model_type == "Prophet":
-                    # forecasts, mapes = analyzer.models['multi_step_prophet'].forecast_node_multistep(
-                    #     train_demand, test_demand, forecast_horizons)
-                    st.warning("No implemenation for multi-step prophet")
+                
                 else:  # XGBoost
                     with st.spinner("Training XGBoost model..."):
                         forecasts, mapes = analyzer.models[
@@ -496,8 +482,7 @@ if node_id:
                         )
                         st.pyplot(fig)
                         plt.close()
-
-                    # Display MAPEs
+                        
                     col1, col2 = st.columns(2)
                     for i, horizon in enumerate(forecast_horizons):
                         if i % 2 == 0:
@@ -510,6 +495,6 @@ if node_id:
                                 f"{horizon}-Step Forecast MAPE",
                                 f"{mapes[horizon]:.2f}%",
                             )
-
+                            
 else:
     st.warning("Please select a node for analysis.")
