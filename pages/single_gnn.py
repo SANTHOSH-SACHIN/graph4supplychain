@@ -127,6 +127,14 @@ with st.sidebar.expander("🎯 Task Configuration", expanded=True):
             )
             root_weight = st.checkbox(f"Root Weight Layer {i+1}", value=True)
             bias   = st.checkbox(f"Bias Layer {i+1}", value=True)
+            layer_config[f"layer{i+1}"] = {
+                "heads": heads,
+                "concat": concat,
+                "beta": beta,
+                "dropout": dropout,
+                "root_weight": root_weight,
+                "bias": bias,
+            }
             
 with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
     hidden_channels = st.number_input(
