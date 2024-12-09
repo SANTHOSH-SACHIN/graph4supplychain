@@ -786,7 +786,7 @@ class TemporalHeterogeneousGraphParser:
         }
         
     def validate_parser(self):
-        test_path = self.local_dir+ self.version
+        test_path = self.local_dir +'/'+ self.version
         if os.path.exists(test_path):
             json_files = glob.glob(os.path.join(test_path, '*.json'))
             if json_files:
