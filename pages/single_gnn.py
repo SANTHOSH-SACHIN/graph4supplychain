@@ -39,7 +39,7 @@ with st.sidebar.expander("🎯 Task Configuration", expanded=True):
     for i in range(num_layers):
         encoder_type = st.sidebar.selectbox(
             "Select Layer Type",
-            ["SAGEConv", "GATConv", "GeneralConv"],
+            ["SAGEConv", "GATConv", "GeneralConv" , "TransformerConv"],
             key=f"layer_{i}",
         )
         st.session_state[f"encoder_type_{i}"] = encoder_type
@@ -47,7 +47,20 @@ with st.sidebar.expander("🎯 Task Configuration", expanded=True):
         # Layer-specific parameters based on encoder type
         if encoder_type == "SAGEConv":
             normalize = st.checkbox(f"Normalize Layer {i+1}", value=True)
-            layer_config[f"layer{i+1}"] = {"normalize": normalize}
+            aggr = st.selectbox(
+                f"Aggregation Type Layer {i+1}", ["mean", "max", "add"]
+            )
+            root_weight = st.checkbox(f"Root Weight Layer {i+1}", value=True)
+            project = st.checkbox(f"Project Layer {i+1}", value=False)
+            bias = st.checkbox(f"Bias Layer {i+1}", value=True)
+            layer_config[f"layer{i+1}"] = {
+                "normalize": normalize,
+                "aggr": aggr,
+                "root_weight": root_weight,
+                "project": project,
+                "bias": bias,
+            }
+
 
         elif encoder_type == "GATConv":
             heads = st.number_input(
@@ -56,15 +69,65 @@ with st.sidebar.expander("🎯 Task Configuration", expanded=True):
             dropout = st.slider(
                 f"Dropout Layer {i+1}", min_value=0.0, max_value=1.0, value=0.0
             )
-            layer_config[f"layer{i+1}"] = {"heads": heads, "dropout": dropout}
+            concat = st.checkbox(f"Concatenate Heads Layer {i+1}", value=True)
+            negative_slope = st.number_input(
+                f"Negative Slope Layer {i+1}", min_value=0.0, value=0.2
+            )
+            fill_value = st.selectbox(
+                f"Fill Value Layer {i+1}", ["mean", "add", "min" , "max" , "mul"], index=0
+            )
+            bias = st.checkbox(f"Bias Layer {i+1}", value=True)
+            residual = st.checkbox(f"Residual Layer {i+1}", value=True)
+            layer_config[f"layer{i+1}"] = {
+                "heads": heads,
+                "dropout": dropout,
+                "concat": concat,
+                "negative_slope": negative_slope,
+                "fill_value": fill_value,
+                "bias": bias,
+                "residual": residual,
+            }
 
         elif encoder_type == "GeneralConv":
             aggr = st.selectbox(
                 f"Aggregation Type Layer {i+1}", ["add", "mean", "max"]
             )
-
+            skip_linear = st.checkbox(f"Skip Linear Layer {i+1}", value=False)
+            directed_msg = st.checkbox(f"Directed Message Layer {i+1}", value=True)
+            heads = st.number_input(
+                f"Number of Heads Layer {i+1}", min_value=1, value=1
+            )
             attention = st.checkbox(f"Use Attention Layer {i+1}", value=False)
-            layer_config[f"layer{i+1}"] = {"aggr": aggr, "attention": attention}
+            attention_type = st.selectbox(
+                f"Attention Type Layer {i+1}",
+                ["additive", "dot_product"],
+                index=0,
+            )
+            l2_normalize = st.checkbox(f"L2 Normalize Layer {i+1}", value=False)
+            bias = st.checkbox(f"Bias Layer {i+1}", value=True)
+            layer_config[f"layer{i+1}"] = {
+                "aggr": aggr,
+                "skip_linear": skip_linear,
+                "directed_msg": directed_msg,
+                "heads": heads,
+                "attention": attention,
+                "attention_type": attention_type,
+                "l2_normalize": l2_normalize,
+                "bias": bias,
+            }
+        
+        elif encoder_type == "TransformerConv":
+            heads = st.number_input(
+                f"Number of Heads Layer {i+1}", min_value=1, value=1
+            )
+            concat = st.checkbox(f"Concatenate Heads Layer {i+1}", value=True)
+            beta = st.checkbox (f"Use Beta Layer {i+1}", value=False)
+            dropout = st.slider(
+                f"Dropout Layer {i+1}", min_value=0.0, max_value=1.0, value=0.0
+            )
+            root_weight = st.checkbox(f"Root Weight Layer {i+1}", value=True)
+            bias   = st.checkbox(f"Bias Layer {i+1}", value=True)
+            
 with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
     hidden_channels = st.number_input(
         "Hidden Channels",

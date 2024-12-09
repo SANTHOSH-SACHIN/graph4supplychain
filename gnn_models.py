@@ -28,7 +28,7 @@ from sklearn.metrics import (
     mean_absolute_error,
     r2_score,
 )
-from torch_geometric.nn import SAGEConv, GATConv, GeneralConv, to_hetero
+from torch_geometric.nn import SAGEConv, GATConv, GeneralConv , TransformerConv, to_hetero
 import torch.nn as nn
 
 
@@ -85,19 +85,45 @@ class GNNEncoder3(torch.nn.Module):
         x = self.conv2(x, edge_index, edge_attr)
         return x
 
-
-class BottleneckDecoder(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, label):
+class GNNEncoder4(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, heads=1, dropout=0.0, edge_dim=None):
         super().__init__()
-        self.label = label
-        hidden_layers = [128, 64, 32]
-        self.linear = MLP(in_channels, hidden_layers, out_channels)
-        self.sigmoid = torch.nn.Sigmoid()
+        
+        # First TransformerConv layer
+        self.conv1 = TransformerConv(
+            in_channels=in_channels,
+            out_channels=hidden_channels,
+            heads=heads,
+            concat=True,
+            beta=False,
+            dropout=dropout,
+            edge_dim=edge_dim,
+            bias=True,
+            root_weight=True
+        )
+        
+        # Second TransformerConv layer
+        self.conv2 = TransformerConv(
+            in_channels=hidden_channels * heads,  # Since concat=True, we multiply by heads
+            out_channels=out_channels,
+            heads=heads,
+            concat=True,
+            beta=False,
+            dropout=dropout,
+            edge_dim=edge_dim,
+            bias=True,
+            root_weight=True
+        )
 
-    def forward(self, z_dict):
-        z = z_dict[self.label]
-        output = self.linear(z)
-        return self.sigmoid(output)
+    def forward(self, x, edge_index, edge_attr=None):
+        # First layer
+        x = self.conv1(x, edge_index, edge_attr).relu()
+        
+        # Second layer
+        x = self.conv2(x, edge_index, edge_attr)
+        
+        return x
+
 
 
 class GRUDecoder(torch.nn.Module):
@@ -160,8 +186,10 @@ class MultiStepModel(torch.nn.Module):
             self.encoder = GNNEncoder(hidden_channels, hidden_channels)
         elif self.encoder_type == "GATConv":
             self.encoder = GNNEncoder2(hidden_channels, hidden_channels)
-        else:
+        elif self.encoder_type == "GeneralConv":
             self.encoder = GNNEncoder3(hidden_channels, hidden_channels)
+        else:
+            self.encoder = GNNEncoder4(hidden_channels, hidden_channels)
 
         if G is not None:
             self.encoder = to_hetero(self.encoder, G.metadata(), aggr="mean")
@@ -568,8 +596,10 @@ class Model3(torch.nn.Module):
             self.encoder = GNNEncoder(hidden_channels, hidden_channels)
         elif self.encoder_type == "GATConv":
             self.encoder = GNNEncoder2(hidden_channels, hidden_channels)
-        else:
+        elif self.encoder_type == "GeneralConv":
             self.encoder = GNNEncoder3(hidden_channels, hidden_channels)
+        else:
+            self.encoder = GNNEncoder4(hidden_channels, hidden_channels)
 
         if G is not None:
             self.encoder = to_hetero(self.encoder, G.metadata(), aggr="mean")
@@ -592,141 +622,6 @@ class Model3(torch.nn.Module):
     def __setstate__(self, state):
         # Restore instance attributes
         self.__dict__.update(state)
-
-
-class Bottleneck_Model(torch.nn.Module):
-    def __init__(self, hidden_channels, out_channels, G=None, label="FACILITY"):
-        super().__init__()
-        # Dynamically choose encoder based on user configuration
-        self.encoder_type = st.session_state.get("encoder_type", "SAGEConv")
-
-        if self.encoder_type == "SAGEConv":
-            self.encoder = GNNEncoder(hidden_channels, hidden_channels)
-        elif self.encoder_type == "GATConv":
-            self.encoder = GNNEncoder2(hidden_channels, hidden_channels)
-        else:
-            self.encoder = GNNEncoder3(hidden_channels, hidden_channels)
-
-        if G is not None:
-            self.encoder = to_hetero(self.encoder, G.metadata(), aggr="mean")
-
-        self.decoder = BottleneckDecoder(hidden_channels, out_channels, label)
-
-    def forward(self, x_dict, edge_index_dict, edge_attr=None):
-        if self.encoder_type == "SAGEConv":
-            z_dict = self.encoder(x_dict, edge_index_dict)
-        else:
-            z_dict = self.encoder(x_dict, edge_index_dict, edge_attr)
-        return self.decoder(z_dict)
-
-
-def train_bottleneck(
-    num_epochs,
-    model,
-    optimizer,
-    loss_fn,
-    temporal_graphs,
-    label="FACILITY",
-    device="cuda",
-    patience=5,
-):
-    st.subheader("Training Progress . . .")
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    best_test_accuracy = 0.0
-    best_test_loss = float("inf")
-    patience_counter = 0
-    best_state = None
-    epoch_losses = []
-    epoch_accuracies = []
-
-    for epoch in range(num_epochs):
-        epoch_train_loss = 0.0
-        epoch_train_accuracy = 0.0
-        epoch_test_loss = 0.0
-        epoch_test_accuracy = 0.0
-        graph_count = 0
-
-        for row in temporal_graphs:
-            G = temporal_graphs[row][1]
-            graph_count += 1
-
-            # Training phase
-            model.train()
-            optimizer.zero_grad()
-
-            # Forward pass
-            out = model(G.x_dict, G.edge_index_dict, G.edge_attr).squeeze(1)
-
-            # Get training masks and compute loss
-            train_mask = G[label]["train_mask"]
-            train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
-
-            # Backward pass
-            train_loss.backward()
-            optimizer.step()
-
-            # Compute training metrics
-            with torch.no_grad():
-                train_pred = out[train_mask]
-                train_true = G[label].y[train_mask].cpu()
-                train_pred_binary = train_pred > 0.5
-                train_accuracy = accuracy_score(train_true, train_pred_binary)
-
-            # Update epoch metrics for training
-            epoch_train_loss += train_loss.item()
-            epoch_train_accuracy += train_accuracy
-
-            # Evaluation phase
-            model.eval()
-            with torch.no_grad():
-                # Forward pass for testing
-                test_mask = G[label]["test_mask"]
-                test_pred = out[test_mask].cpu()
-                test_pred_binary = test_pred > 0.5
-                test_true = G[label].y[test_mask].cpu()
-
-                # Compute test metrics
-                test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
-                test_accuracy = accuracy_score(test_true, test_pred_binary)
-
-                # Update epoch metrics for testing
-                epoch_test_loss += test_loss.item()
-                epoch_test_accuracy += test_accuracy
-
-        # Average metrics over all graphs
-        avg_train_loss = epoch_train_loss / graph_count
-        avg_train_accuracy = epoch_train_accuracy / graph_count
-        avg_test_loss = epoch_test_loss / graph_count
-        avg_test_accuracy = epoch_test_accuracy / graph_count
-
-        epoch_losses.append(avg_test_loss)
-        epoch_accuracies.append(avg_test_accuracy)
-
-        # Check for improvement
-        if avg_test_loss < best_test_loss:
-            best_test_loss = avg_test_loss
-            best_test_accuracy = avg_test_accuracy
-            best_state = model.state_dict().copy()
-            patience_counter = 0  # Reset patience counter
-        else:
-            patience_counter += 1
-
-        # Early stopping
-        if patience_counter >= patience:
-            st.write(f"Early stopping triggered at epoch {epoch + 1}")
-            break
-
-        # Update progress bar and status text
-        progress_bar.progress((epoch + 1) / num_epochs)
-        status_text.text(
-            f"Epoch {epoch + 1}/{num_epochs} - Train Loss: {avg_train_loss:.4f}, Train Accuracy: {avg_train_accuracy:.4f}"
-        )
-
-    # Load best model
-    if best_state:
-        model.load_state_dict(best_state)
-    return model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies
 
 
 def train_classification(
