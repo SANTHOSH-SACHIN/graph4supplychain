@@ -370,12 +370,18 @@ class TemporalHeterogeneousGraphParser:
                         
             bottle_neck={}
             supply={}
+
+            self.lam_facility  = []
+            self.external_facility = []
             for facility in data['node_values']['FACILITY']:
                 if facility[self.get_node_index('FACILITY','type')] == "lam":
+                    self.lam_facility.append(facility[self.get_node_index('FACILITY','id')])
                     id = facility[self.get_node_index('FACILITY','id')]
                     target = edges[id][self.get_edge_index('FACILITYToPRODUCT_OFFERING', 'target')]
                     po_demand[target][1]+= facility[self.get_node_index('FACILITY','max_capacity')]
-    
+                else:
+                    self.external_facility.append(facility[self.get_node_index('FACILITY','id')])
+                    
             for facility in data['node_values']['FACILITY']:
                 if facility[self.get_node_index('FACILITY','type')] == "lam":
                     id = facility[self.get_node_index('FACILITY','id')]
