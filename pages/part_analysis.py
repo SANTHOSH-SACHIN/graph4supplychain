@@ -124,7 +124,7 @@ with st.sidebar.expander("📊 Data Configuration", expanded=True):
 
     base_url = os.getenv("SERVER_URL")
     version = st.sidebar.text_input(
-        "Enter Version of the fetch", "NSS_1000_12", key="graphversion"
+        "Enter Version of the fetch", "NSS_1000_12_Simulation", key="graphversion"
     )
     headers = {"accept": "application/json"}
 

@@ -11,6 +11,7 @@ from typing import Dict
 import os
 import numpy as np
 from ts_models.sarima_updated import sarima_demand_forecast,forecast_node_multistep_sarima
+from tempfile import NamedTemporaryFile
 
 
 #utils
@@ -191,310 +192,319 @@ data_source = st.sidebar.radio(
     "Select Data Source", ["Local Directory", "Server"]
 )
 version = st.sidebar.text_input(
-    "Enter Version of the fetch", "NSS_1000_12", key="ts_version"
+    "Enter Version of the fetch", "NSS_1000_12_Simulation", key="ts_version"
 )
 local_dir = st.sidebar.text_input("Enter local directory path", "./data")
-if data_source == "Local Directory":
-    st.sidebar.header("Local Directory Settings")
 
-    try:
-        base_url = os.getenv("SERVER_URL")
-        parser = TemporalHeterogeneousGraphParser(
-            base_url=base_url,
-            version=version,
-            headers={"accept": "application/json"},
-            meta_data_path="./metadata.json",
-            use_local_files=True,
-            local_dir=local_dir + "/",
-            num_classes=20,
-        )
-        st.sidebar.success("Successfully loaded local files!")
-    except Exception as e:
-        st.sidebar.error(f"Error loading local files: {str(e)}")
+# File uploader for metadata.json
+metadata_file = st.sidebar.file_uploader("Upload metadata.json", type="json")
 
-else:  # Server
-    st.sidebar.header("Server Settings")
-    server_url = os.getenv("SERVER_URL")
-    # st.write(server_url)
-    local_dir = st.sidebar.text_input(
-        "Enter local directory path", "./data", key="local_dir"
-    )
-    if server_url:
+if metadata_file is not None:
+    # Create a temporary file and write the uploaded content to it
+    with NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        temp_file.write(metadata_file.getvalue())
+        temp_file_path = temp_file.name
+
+    if data_source == "Local Directory":
+        st.sidebar.header("Local Directory Settings")
+
         try:
             base_url = os.getenv("SERVER_URL")
             parser = TemporalHeterogeneousGraphParser(
                 base_url=base_url,
                 version=version,
                 headers={"accept": "application/json"},
-                meta_data_path="./metadata.json",
-                use_local_files=False,
-                local_dir=local_dir + "/" ,
+                meta_data_path=temp_file_path,
+                use_local_files=True,
+                local_dir=local_dir + "/",
                 num_classes=20,
             )
-            st.sidebar.success("Successfully connected to server!")
+            st.sidebar.success("Successfully loaded local files!")
         except Exception as e:
-            st.sidebar.error(f"Error connecting to server: {str(e)}")
-    else:
-        st.sidebar.warning("Please enter a server URL")
+            st.sidebar.error(f"Error loading local files: {str(e)}")
 
-# Create temporal graph and get demand DataFrame
-try:
-    with st.spinner("Loading and processing data..."):
-        temporal_graphs, hetero_obj = parser.create_temporal_graph(
-            regression=False,
-            out_steps=3,
-            multistep=False,
-            task="df",
-            threshold=10,
+    else:  # Server
+        st.sidebar.header("Server Settings")
+        server_url = os.getenv("SERVER_URL")
+        local_dir = st.sidebar.text_input(
+            "Enter local directory path", "./data", key="local_dir"
         )
-        demand_df = parser.get_df()
-        demand_df.index = pd.to_datetime(demand_df.index)
+        if server_url:
+            try:
+                base_url = os.getenv("SERVER_URL")
+                parser = TemporalHeterogeneousGraphParser(
+                    base_url=base_url,
+                    version=version,
+                    headers={"accept": "application/json"},
+                    meta_data_path=temp_file_path,
+                    use_local_files=False,
+                    local_dir=local_dir + "/",
+                    num_classes=20,
+                )
+                st.sidebar.success("Successfully connected to server!")
+            except Exception as e:
+                st.sidebar.error(f"Error connecting to server: {str(e)}")
+        else:
+            st.sidebar.warning("Please enter a server URL")
 
-        # Initialize analyzer
-        analyzer = StreamlitTimeSeriesAnalyzer(
-            metadata_path=(
-                "./metadata.json" if data_source == "Local Directory" else None
-            ),
-            server_url=server_url if data_source == "Server" else None,
-            headers=(
-                {"accept": "application/json"}
-                if data_source == "Server"
-                else None
-            ),
-        )
-        analyzer.initialize_models()
-except Exception as e:
-    st.error(f"Error processing data: {str(e)}")
+    # Create temporal graph and get demand DataFrame
+    try:
+        with st.spinner("Loading and processing data..."):
+            temporal_graphs, hetero_obj = parser.create_temporal_graph(
+                regression=False,
+                out_steps=3,
+                multistep=False,
+                task="df",
+                threshold=10,
+            )
+            demand_df = parser.get_df()
+            demand_df.index = pd.to_datetime(demand_df.index)
+
+            # Initialize analyzer
+            analyzer = StreamlitTimeSeriesAnalyzer(
+                metadata_path=temp_file_path,
+                server_url=server_url if data_source == "Server" else None,
+                headers=(
+                    {"accept": "application/json"}
+                    if data_source == "Server"
+                    else None
+                ),
+            )
+            analyzer.initialize_models()
+            analysis_type = st.selectbox("Select Forecasting Type", ["Single-Step", "Multi-Step"])
+
+            node_id = st.selectbox("Select Node for Analysis", demand_df.columns)
+
+            if analysis_type == "Single-Step":
+                model_type = st.selectbox("Select a Timeseries Model",["ARIMA", "SARIMA", "CNN-LSTM", "XGBOOST","PROPHET"])
+                
+            else:
+                model_type = st.selectbox("Select a Timeseries Model", ["ARIMA","SARIMA","XGBOOST"])
+
+            lookback = None
+            if model_type == "CNN-LSTM":
+                st.sidebar.subheader("CNN-LSTM Parameters")
+                lookback = st.sidebar.slider("Lookback Period", 3, 10, 3)
+                num_epochs = st.sidebar.slider("Number of Epochs", 50, 200, 100)
+                batch_size = st.sidebar.slider("Batch Size", 16, 64, 32)
+            elif model_type == "XGBoost":
+                st.sidebar.subheader("XGBoost Parameters")
+                lookback = st.sidebar.slider("Lookback Period", 3, 10, 3)
+                n_estimators = st.sidebar.slider("Number of Estimators", 50, 500, 100)
+                max_depth = st.sidebar.slider("Max Depth", 3, 10, 6)
+                learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, 0.1)
+                
+            if node_id:
+                st.write(f"Analyzing Node: {node_id}")
+
+                # Train-test split
+                train_demand, test_demand = analyzer.models[
+                    "single_step_arima"
+                ].train_test_split(demand_df[node_id])
+                
+                if analysis_type == "Single-Step":
+                    st.subheader(f"Single-Step {model_type} Forecasting")
+
+                    # Get forecasts based on model type
+                    if model_type == "ARIMA":
+                        demand_forecast, demand_mape = analyzer.models[
+                            "single_step_arima"
+                        ].forecast_node(train_demand, test_demand)
+                        fig = plot_single_step_forecast(
+                        train_demand,
+                        test_demand,
+                        demand_forecast,
+                        model_type,
+                        node_id,
+                        demand_mape,
+                        lookback,
+                    )
+                        st.pyplot(fig)
+                        plt.close()
+
+                        st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+                        
+                    elif model_type == "SARIMA":
+                        demand_forecast,demand_mape = sarima_demand_forecast(train_demand,test_demand)
+                        fig = plot_single_step_forecast(
+                        train_demand,
+                        test_demand,
+                        demand_forecast,
+                        model_type,
+                        node_id,
+                        demand_mape,
+                        lookback,
+                    )
+                        st.pyplot(fig)
+                        plt.close()
+
+                        st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+                    
+                    elif model_type == "CNN-LSTM":
+                        with st.spinner("Training CNN-LSTM model..."):
+                            demand_forecast, demand_mape = analyzer.models[
+                                "single_step_cnnlstm"
+                            ].forecast_node_cnn_lstm(
+                                train_demand,
+                                test_demand,
+                                node_id,
+                                "demand",
+                                lookback=lookback,
+                                epochs=num_epochs,
+                                batch_size=batch_size,
+                            )
+                            fig = plot_single_step_forecast(
+                            train_demand,
+                            test_demand,
+                            demand_forecast,
+                            model_type,
+                            node_id,
+                            demand_mape,
+                            lookback,
+                            )
+                            st.pyplot(fig)
+                            plt.close()
+
+                            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+                            
+                    elif model_type == "PROPHET":
+                        with st.spinner("Training Prophet model..."):
+                            demand_forecast, demand_mape = analyzer.models[
+                                "single_step_prophet"
+                            ].forecast_node(train_demand, test_demand)
+                            
+                            fig = plot_single_step_forecast(
+                                train_demand,
+                                test_demand,
+                                demand_forecast,
+                                model_type,
+                                node_id,
+                                demand_mape,
+                                lookback,
+                            )
+                            st.pyplot(fig)
+                            plt.close()
+
+                            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+                    
+                    else:  # XGBoost
+                        with st.spinner("Training XGBoost model..."):
+                            demand_forecast, demand_mape = analyzer.models[
+                                "single_step_xgboost"
+                            ].single_step_forecast(train_demand, test_demand)
+                            
+                            fig = plot_single_step_forecast(
+                                train_demand,
+                                test_demand,
+                                demand_forecast,
+                                model_type,
+                                node_id,
+                                demand_mape,
+                                lookback,
+                            )
+                            st.pyplot(fig)
+                            plt.close()
+
+                            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
+                            
+                elif analysis_type == "Multi-Step":
+                    st.subheader(f"Multi-Step {model_type} Forecasting")
+                    
+                    forecast_horizons = st.multiselect(
+                            "Select Forecast Horizons (Steps)",
+                            [1, 2, 3, 4, 5, 6],
+                            default=[1],
+                        )
+                    
+                    if forecast_horizons:
+                            if model_type == "ARIMA":
+                                forecasts, mapes = analyzer.models['multi_step_arima'].forecast_node_multistep(
+                                    train_demand, test_demand, forecast_horizons
+                                    )
+                                fig = analyzer.models['multi_step_arima'].plot_multistep_forecast_comparison(
+                                    train_series=train_demand, 
+                                    test_series=test_demand, 
+                                    forecasts=forecasts, 
+                                    forecast_horizons=forecast_horizons,
+                                    title=f"Multi-Step ARIMA Forecast for Node {node_id}",
+                                    metric="Demand",
+                                    node_id=node_id,
+                                    mapes=mapes
+                                )
+                                
+                                # Display the plot in Streamlit
+                                st.pyplot(fig)
+                                plt.close()
+                                
+                                # Display MAPE for each horizon
+                                st.write("MAPE for Each Forecast Horizon:")
+                                for horizon, mape in mapes.items():
+                                    st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
+
+                            elif model_type == "SARIMA":
+                                forecasts, mapes = forecast_node_multistep_sarima(train_demand,test_demand,forecast_horizons)
+                                fig = analyzer.models['multi_step_arima'].plot_multistep_forecast_comparison(
+                                            train_series=train_demand, 
+                                            test_series=test_demand, 
+                                            forecasts=forecasts, 
+                                            forecast_horizons=forecast_horizons,
+                                            title=f"Multi-Step ARIMA Forecast for Node {node_id}",
+                                            metric="Demand",
+                                            node_id=node_id,
+                                            mapes=mapes
+                                        )
+                                        
+                                        # Display the plot in Streamlit
+                                st.pyplot(fig)
+                                plt.close()
+                                        
+                                        # Display MAPE for each horizon
+                                st.write("MAPE for Each Forecast Horizon:")
+                                for horizon, mape in mapes.items():
+                                        st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
+                            
+                            else:  # XGBoost
+                                with st.spinner("Training XGBoost model..."):
+                                    forecasts, mapes = analyzer.models[
+                                        "multi_step_xgboost"
+                                    ].multi_step_forecast(
+                                        train_demand, test_demand, forecast_horizons
+                                    )
+
+                                # Plot results
+                                    fig = plot_multi_step_forecast(
+                                        train_demand,
+                                        test_demand,
+                                        forecasts,
+                                        mapes,
+                                        model_type,
+                                        node_id,
+                                        forecast_horizons,
+                                        lookback,
+                                    )
+                                    st.pyplot(fig)
+                                    plt.close()
+                                    
+                                col1, col2 = st.columns(2)
+                                for i, horizon in enumerate(forecast_horizons):
+                                    if i % 2 == 0:
+                                        col1.metric(
+                                            f"{horizon}-Step Forecast MAPE",
+                                            f"{mapes[horizon]:.2f}%",
+                                        )
+                                    else:
+                                        col2.metric(
+                                            f"{horizon}-Step Forecast MAPE",
+                                            f"{mapes[horizon]:.2f}%",
+                                        )
+                                        
+            else:
+                st.warning("Please select a node for analysis.")
+    except Exception as e:
+        st.error(f"Error processing data: {str(e)}")
+else:
+    st.sidebar.warning("Please upload the metadata.json file")
 
 # st.subheader("Demand Data Preview")
 # st.dataframe(demand_df)
 
-analysis_type = st.selectbox("Select Forecasting Type", ["Single-Step", "Multi-Step"])
-
-node_id = st.selectbox("Select Node for Analysis", demand_df.columns)
-
-if analysis_type == "Single-Step":
-    model_type = st.selectbox("Select a Timeseries Model",["ARIMA", "SARIMA", "CNN-LSTM", "XGBOOST","PROPHET"])
-    
-else:
-    model_type = st.selectbox("Select a Timeseries Model", ["ARIMA","SARIMA","XGBOOST"])
-
-lookback = None
-if model_type == "CNN-LSTM":
-    st.sidebar.subheader("CNN-LSTM Parameters")
-    lookback = st.sidebar.slider("Lookback Period", 3, 10, 3)
-    num_epochs = st.sidebar.slider("Number of Epochs", 50, 200, 100)
-    batch_size = st.sidebar.slider("Batch Size", 16, 64, 32)
-elif model_type == "XGBoost":
-    st.sidebar.subheader("XGBoost Parameters")
-    lookback = st.sidebar.slider("Lookback Period", 3, 10, 3)
-    n_estimators = st.sidebar.slider("Number of Estimators", 50, 500, 100)
-    max_depth = st.sidebar.slider("Max Depth", 3, 10, 6)
-    learning_rate = st.sidebar.slider("Learning Rate", 0.01, 0.3, 0.1)
-    
-if node_id:
-    st.write(f"Analyzing Node: {node_id}")
-
-    # Train-test split
-    train_demand, test_demand = analyzer.models[
-        "single_step_arima"
-    ].train_test_split(demand_df[node_id])
-    
-    if analysis_type == "Single-Step":
-        st.subheader(f"Single-Step {model_type} Forecasting")
-
-        # Get forecasts based on model type
-        if model_type == "ARIMA":
-            demand_forecast, demand_mape = analyzer.models[
-                "single_step_arima"
-            ].forecast_node(train_demand, test_demand)
-            fig = plot_single_step_forecast(
-            train_demand,
-            test_demand,
-            demand_forecast,
-            model_type,
-            node_id,
-            demand_mape,
-            lookback,
-        )
-            st.pyplot(fig)
-            plt.close()
-
-            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-            
-        elif model_type == "SARIMA":
-            demand_forecast,demand_mape = sarima_demand_forecast(train_demand,test_demand)
-            fig = plot_single_step_forecast(
-            train_demand,
-            test_demand,
-            demand_forecast,
-            model_type,
-            node_id,
-            demand_mape,
-            lookback,
-        )
-            st.pyplot(fig)
-            plt.close()
-
-            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-        
-        elif model_type == "CNN-LSTM":
-            with st.spinner("Training CNN-LSTM model..."):
-                demand_forecast, demand_mape = analyzer.models[
-                    "single_step_cnnlstm"
-                ].forecast_node_cnn_lstm(
-                    train_demand,
-                    test_demand,
-                    node_id,
-                    "demand",
-                    lookback=lookback,
-                    epochs=num_epochs,
-                    batch_size=batch_size,
-                )
-                fig = plot_single_step_forecast(
-                train_demand,
-                test_demand,
-                demand_forecast,
-                model_type,
-                node_id,
-                demand_mape,
-                lookback,
-                )
-                st.pyplot(fig)
-                plt.close()
-
-                st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-                
-        elif model_type == "PROPHET":
-            with st.spinner("Training Prophet model..."):
-                demand_forecast, demand_mape = analyzer.models[
-                    "single_step_prophet"
-                ].forecast_node(train_demand, test_demand)
-                
-                fig = plot_single_step_forecast(
-                    train_demand,
-                    test_demand,
-                    demand_forecast,
-                    model_type,
-                    node_id,
-                    demand_mape,
-                    lookback,
-                )
-                st.pyplot(fig)
-                plt.close()
-
-                st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-        
-        else:  # XGBoost
-            with st.spinner("Training XGBoost model..."):
-                demand_forecast, demand_mape = analyzer.models[
-                    "single_step_xgboost"
-                ].single_step_forecast(train_demand, test_demand)
-                
-                fig = plot_single_step_forecast(
-                    train_demand,
-                    test_demand,
-                    demand_forecast,
-                    model_type,
-                    node_id,
-                    demand_mape,
-                    lookback,
-                )
-                st.pyplot(fig)
-                plt.close()
-
-                st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-                
-    elif analysis_type == "Multi-Step":
-        st.subheader(f"Multi-Step {model_type} Forecasting")
-        
-        forecast_horizons = st.multiselect(
-                "Select Forecast Horizons (Steps)",
-                [1, 2, 3, 4, 5, 6],
-                default=[1],
-            )
-        
-        if forecast_horizons:
-                if model_type == "ARIMA":
-                    forecasts, mapes = analyzer.models['multi_step_arima'].forecast_node_multistep(
-                        train_demand, test_demand, forecast_horizons
-                        )
-                    fig = analyzer.models['multi_step_arima'].plot_multistep_forecast_comparison(
-                        train_series=train_demand, 
-                        test_series=test_demand, 
-                        forecasts=forecasts, 
-                        forecast_horizons=forecast_horizons,
-                        title=f"Multi-Step ARIMA Forecast for Node {node_id}",
-                        metric="Demand",
-                        node_id=node_id,
-                        mapes=mapes
-                    )
-                    
-                    # Display the plot in Streamlit
-                    st.pyplot(fig)
-                    plt.close()
-                    
-                    # Display MAPE for each horizon
-                    st.write("MAPE for Each Forecast Horizon:")
-                    for horizon, mape in mapes.items():
-                        st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
-
-                elif model_type == "SARIMA":
-                    forecasts, mapes = forecast_node_multistep_sarima(train_demand,test_demand,forecast_horizons)
-                    fig = analyzer.models['multi_step_arima'].plot_multistep_forecast_comparison(
-                                train_series=train_demand, 
-                                test_series=test_demand, 
-                                forecasts=forecasts, 
-                                forecast_horizons=forecast_horizons,
-                                title=f"Multi-Step ARIMA Forecast for Node {node_id}",
-                                metric="Demand",
-                                node_id=node_id,
-                                mapes=mapes
-                            )
-                            
-                            # Display the plot in Streamlit
-                    st.pyplot(fig)
-                    plt.close()
-                            
-                            # Display MAPE for each horizon
-                    st.write("MAPE for Each Forecast Horizon:")
-                    for horizon, mape in mapes.items():
-                            st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
-                
-                else:  # XGBoost
-                    with st.spinner("Training XGBoost model..."):
-                        forecasts, mapes = analyzer.models[
-                            "multi_step_xgboost"
-                        ].multi_step_forecast(
-                            train_demand, test_demand, forecast_horizons
-                        )
-
-                    # Plot results
-                        fig = plot_multi_step_forecast(
-                            train_demand,
-                            test_demand,
-                            forecasts,
-                            mapes,
-                            model_type,
-                            node_id,
-                            forecast_horizons,
-                            lookback,
-                        )
-                        st.pyplot(fig)
-                        plt.close()
-                        
-                    col1, col2 = st.columns(2)
-                    for i, horizon in enumerate(forecast_horizons):
-                        if i % 2 == 0:
-                            col1.metric(
-                                f"{horizon}-Step Forecast MAPE",
-                                f"{mapes[horizon]:.2f}%",
-                            )
-                        else:
-                            col2.metric(
-                                f"{horizon}-Step Forecast MAPE",
-                                f"{mapes[horizon]:.2f}%",
-                            )
-                            
-else:
-    st.warning("Please select a node for analysis.")

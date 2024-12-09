@@ -2,7 +2,7 @@ from utils.parser_st import TemporalHeterogeneousGraphParser
 from gnn_models import *
 from utils.utils import download_model_button
 import os
-
+from tempfile import NamedTemporaryFile
 import streamlit as st
 import torch
 import plotly.graph_objects as go
@@ -13,6 +13,7 @@ import torch.nn.functional as F
 import pandas as pd
 import numpy as np
 import torch.nn as nn
+from tempfile import NamedTemporaryFile
 
 
 st.subheader("Graph Neural Network Training Interface")
@@ -116,245 +117,540 @@ with st.sidebar.expander("📊 Data Configuration", expanded=True):
     local_dir = st.text_input("Local Directory Path", "./data")
     version = st.text_input(
         "Enter Version of the fetch",
-        "NSS_1000_12",
+        "NSS_1000_12_Simulation",
         key="train_graph_version",
     )
+metadata_file = st.sidebar.file_uploader("Upload metadata.json", type="json")
 
+if metadata_file is not None:
+    with NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        temp_file.write(metadata_file.getvalue())
+        temp_file_path = temp_file.name
 # Start Training Button
-train_button = st.sidebar.button("🚀 Start Training")
+    train_button = st.sidebar.button("🚀 Start Training")
+    if train_button:
+        try:
+            if not use_local_files:
+                try:
+                    # Initialize parser and create temporal graph
+                    base_url = os.getenv("SERVER_URL")
+                    parser = TemporalHeterogeneousGraphParser(
+                        base_url=base_url,
+                        version=version,
+                        headers={"accept": "application/json"},
+                        meta_data_path=temp_file_path,
+                        use_local_files=False,
+                        local_dir=local_dir + "/",
+                    )
 
-if not use_local_files:
-    try:
-        # Initialize parser and create temporal graph
-        base_url = os.getenv("SERVER_URL")
-        parser = TemporalHeterogeneousGraphParser(
-            base_url=base_url,
-            version=version,
-            headers={"accept": "application/json"},
-            meta_data_path="metadata.json",
-            use_local_files=use_local_files,
-            local_dir=local_dir + "/",
-        )
+                    # Create temporal graphs based on task type
+                    regression_flag = (
+                        True if st.session_state.task_type == "Regression" else False
+                    )
+                    
+                    temporal_graphs, hetero_obj = parser.create_temporal_graph(
+                        regression=regression_flag,
+                        out_steps=3,
+                        multistep=False,
+                        task=task_forecast,
+                        threshold=10,
+                    )
 
-        # Create temporal graphs based on task type
-        regression_flag = (
-            True if st.session_state.task_type == "Regression" else False
-        )
-        temporal_graphs, hetero_obj = parser.create_temporal_graph(
-            regression=regression_flag,
-            out_steps=3,
-            multistep=False,
-            task=task_forecast,
-            threshold=10,
-        )
+                    # Select the graph (e.g., at time step 10)
+                    G = temporal_graphs[len(temporal_graphs)][1]
+                    # Initialize model
+                    model = Model3(
+                        hidden_channels=hidden_channels,
+                        out_channels=G.num_classes,
+                        max_num_parts=G.num_nodes,
+                        G=G
+                    )
 
-        # Select the graph (e.g., at time step 10)
-        G = temporal_graphs[len(temporal_graphs)][1]
+                    # Move model to appropriate device
+                    # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                    model = model.to(device)
 
-        # Initialize model
-        model = Model3(
-            hidden_channels=hidden_channels,
-            out_channels=G.num_classes,
-            max_num_parts=G.num_nodes,
-            G=G
-        )
+                    # Configure optimizer and loss function
+                    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-        # Move model to appropriate device
-        # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
-        model = model.to(device)
+                    if task_type == "Classification":
+                        loss_fn = F.cross_entropy
+                        train_fn = train_classification
+                    else:
+                        loss_fn = F.mse_loss
+                        train_fn = train_regression
 
-        # Configure optimizer and loss function
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+                    # Start training
+                    if task_type == "Classification":
+                        (
+                            trained_model,
+                            best_test_accuracy,
+                            best_test_loss,
+                            epoch_losses,
+                            epoch_accuracies,
+                        ) = train_classification(
+                            num_epochs,
+                            model,
+                            optimizer,
+                            loss_fn,
+                            temporal_graphs,
+                            label="PARTS",
+                            device=device,
+                            patience=patience,
+                        )
+                        download_model_button(
+                            trained_model, filename="SingleStepGNNClassification.pth"
+                        )
 
-        if task_type == "Classification":
-            loss_fn = F.cross_entropy
-            train_fn = train_classification
-        else:
-            loss_fn = F.mse_loss
-            train_fn = train_regression
+                    else:
+                        if task_forecast is "df":
+                            (
+                                trained_model,
+                                best_test_r2,
+                                best_test_adjusted_r2,
+                                best_test_mae,
+                                epoch_losses,
+                                epoch_r2_scores,
+                                epoch_adjusted_r2_scores
+                            ) = train_regression(
+                                num_epochs,
+                                model,
+                                optimizer,
+                                loss_fn,
+                                temporal_graphs,
+                                label="PARTS",
+                                device=device,
+                                patience=patience,
+                            )
+                        else:
+                            (
+                                trained_model,
+                                best_test_r2,
+                                best_test_adjusted_r2,
+                                best_test_mae,
+                                epoch_losses,
+                                epoch_r2_scores,
+                                epoch_adjusted_r2_scores
+                            ) = train_regression(
+                                num_epochs,
+                                model,
+                                optimizer,
+                                loss_fn,
+                                temporal_graphs,
+                                label="FACILITY",
+                                device=device,
+                                patience=patience,
+                            )
+                        download_model_button(
+                            trained_model, filename="SingleStepGNNRegression.pth"
+                        )
 
-        # Start training
-        if task_type == "Classification":
-            (
-                trained_model,
-                best_test_accuracy,
-                best_test_loss,
-                epoch_losses,
-                epoch_accuracies,
-            ) = train_classification(
-                num_epochs,
-                model,
-                optimizer,
-                loss_fn,
-                temporal_graphs,
-                label="PARTS",
-                device=device,
-                patience=patience,
-            )
-            download_model_button(
-                trained_model, filename="SingleStepGNNClassification.pth"
-            )
+                    # Display results
+                    if task_type == "Classification":
+                        st.success(
+                            f"Training Completed. Best Test Accuracy: {best_test_accuracy:.4f}, Best Test Loss: {best_test_loss:.4f}"
+                        )
+                    else:
+                        st.success(
+                            f"Training Completed. Best R² Score: {best_test_r2:.4f}, Best MAE: {best_test_mae:.4f}"
+                        )
 
-        else:
-            if task_forecast is "df":
-                (
-                    trained_model,
-                    best_test_r2,
-                    best_test_mae,
-                    epoch_losses,
-                    epoch_r2_scores,
-                ) = train_regression(
-                    num_epochs,
-                    model,
-                    optimizer,
-                    loss_fn,
-                    temporal_graphs,
-                    label="PARTS",
-                    device=device,
-                    patience=patience,
-                )
-            else:
-                (
-                    trained_model,
-                    best_test_r2,
-                    best_test_mae,
-                    epoch_losses,
-                    epoch_r2_scores,
-                ) = train_regression(
-                    num_epochs,
-                    model,
-                    optimizer,
-                    loss_fn,
-                    temporal_graphs,
-                    label="FACILITY",
-                    device=device,
-                    patience=patience,
-                )
-            download_model_button(
-                trained_model, filename="SingleStepGNNRegression.pth"
-            )
+                    # Dashboard for Model Performance
+                    st.subheader("Model Performance Dashboard")
 
-        # Display results
-        if task_type == "Classification":
-            st.success(
-                f"Training Completed. Best Test Accuracy: {best_test_accuracy:.4f}, Best Test Loss: {best_test_loss:.4f}"
-            )
-        else:
-            st.success(
-                f"Training Completed. Best R² Score: {best_test_r2:.4f}, Best MAE: {best_test_mae:.4f}"
-            )
+                    # Custom CSS for styling
+                    st.markdown(
+                        """
+                        <style>
+                        .metric-card {
+                            
+                            padding: 20px;
+                            border-radius: 10px;
+                            margin: 10px;
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                            transition: transform 0.3s ease-in-out;
+                        }
+                        .metric-card:hover {
+                            transform: scale(1.05);
+                        }
+                        </style>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
-        # Dashboard for Model Performance
-        st.subheader("Model Performance Dashboard")
+                    # Create columns for metrics
 
-        # Custom CSS for styling
-        st.markdown(
-            """
-            <style>
-            .metric-card {
+                    if task_type == "Classification":
+                        col1, col2 = st.columns(2)
+                        col1.markdown(
+                            f"<div class='metric-card'><h3>Accuracy</h3><p>{best_test_accuracy:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+                        col2.markdown(
+                            f"<div class='metric-card'><h3>Loss</h3><p>{best_test_loss:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        # Plot performance graph for loss
+                        fig_loss = go.Figure()
+                        fig_loss.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_losses))),
+                                y=epoch_losses,
+                                mode="lines+markers",
+                                name="Loss",
+                            )
+                        )
+                        fig_loss.update_layout(
+                            title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
+                        )
+                        st.plotly_chart(fig_loss)
+
+                        # Plot performance graph for accuracy
+                        fig_accuracy = go.Figure()
+                        fig_accuracy.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_accuracies))),
+                                y=epoch_accuracies,
+                                mode="lines+markers",
+                                name="Accuracy",
+                            )
+                        )
+                        fig_accuracy.update_layout(
+                            title="Epoch-wise Accuracy",
+                            xaxis_title="Epoch",
+                            yaxis_title="Accuracy",
+                        )
+                        st.plotly_chart(fig_accuracy)
+                    else:
+                        col1, col2, col3 = st.columns(3)
+                        col1.markdown(
+                            f"<div class='metric-card'><h3>R² Score</h3><p>{best_test_r2:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+                        col2.markdown(
+                            f"<div class='metric-card'><h3>Adjusted R² Score</h3><p>{best_test_adjusted_r2:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+                        col3.markdown(
+                            f"<div class='metric-card'><h3>MAE</h3><p>{best_test_mae:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        # Plot performance graph for loss
+                        fig_loss = go.Figure()
+                        fig_loss.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_losses))),
+                                y=epoch_losses,
+                                mode="lines+markers",
+                                name="Loss",
+                            )
+                        )
+                        fig_loss.update_layout(
+                            title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
+                        )
+                        st.plotly_chart(fig_loss)
+
+                        # Plot performance graph for R² score
+                        fig_r2 = go.Figure()
+                        fig_r2.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_r2_scores))),
+                                y=epoch_r2_scores,
+                                mode="lines+markers",
+                                name="R² Score",
+                            )
+                        )
+                        fig_r2.update_layout(
+                            title="Epoch-wise R² Score",
+                            xaxis_title="Epoch",
+                            yaxis_title="R² Score",
+                        )
+                        st.plotly_chart(fig_r2)
+
+                        # Plot performance graph for Adj R² score
+                        fig_adjr2 = go.Figure()
+                        fig_adjr2.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_adjusted_r2_scores))),
+                                y=epoch_adjusted_r2_scores,
+                                mode="lines+markers",
+                                name="Adjusted R² Score",
+                            )
+                        )
+                        fig_adjr2.update_layout(
+                            title="Epoch-wise Adjusted R² Score",
+                            xaxis_title="Epoch",
+                            yaxis_title="Adjusted R² Score",
+                        )
+                        st.plotly_chart(fig_adjr2)   
                 
-                padding: 20px;
-                border-radius: 10px;
-                margin: 10px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                transition: transform 0.3s ease-in-out;
-            }
-            .metric-card:hover {
-                transform: scale(1.05);
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+                except Exception as e:
+                    st.error(f"An error occurred during training: {str(e)}")
+                    print(str(e))
+            else:
+                try:
+                    # Initialize parser and create temporal graph
+                    base_url = os.getenv("SERVER_URL")
+                    parser = TemporalHeterogeneousGraphParser(
+                        base_url=base_url,
+                        version=version,
+                        headers={"accept": "application/json"},
+                        meta_data_path=temp_file_path,
+                        use_local_files=True,
+                        local_dir=local_dir + "/",
+                    )
 
-        # Create columns for metrics
+                    # Create temporal graphs based on task type
+                    regression_flag = (
+                        True if st.session_state.task_type == "Regression" else False
+                    )
+                    
+                    temporal_graphs, hetero_obj = parser.create_temporal_graph(
+                        regression=regression_flag,
+                        out_steps=3,
+                        multistep=False,
+                        task=task_forecast,
+                        threshold=10,
+                    )
 
-        if task_type == "Classification":
-            col1, col2 = st.columns(2)
-            col1.markdown(
-                f"<div class='metric-card'><h3>Accuracy</h3><p>{best_test_accuracy:.4f}</p></div>",
-                unsafe_allow_html=True,
-            )
-            col2.markdown(
-                f"<div class='metric-card'><h3>Loss</h3><p>{best_test_loss:.4f}</p></div>",
-                unsafe_allow_html=True,
-            )
+                    # Select the graph (e.g., at time step 10)
+                    G = temporal_graphs[len(temporal_graphs)][1]
+                    # Initialize model
+                    model = Model3(
+                        hidden_channels=hidden_channels,
+                        out_channels=G.num_classes,
+                        max_num_parts=G.num_nodes,
+                        G=G
+                    )
 
-            # Plot performance graph for loss
-            fig_loss = go.Figure()
-            fig_loss.add_trace(
-                go.Scatter(
-                    x=list(range(len(epoch_losses))),
-                    y=epoch_losses,
-                    mode="lines+markers",
-                    name="Loss",
-                )
-            )
-            fig_loss.update_layout(
-                title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
-            )
-            st.plotly_chart(fig_loss)
+                    # Move model to appropriate device
+                    # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                    model = model.to(device)
 
-            # Plot performance graph for accuracy
-            fig_accuracy = go.Figure()
-            fig_accuracy.add_trace(
-                go.Scatter(
-                    x=list(range(len(epoch_accuracies))),
-                    y=epoch_accuracies,
-                    mode="lines+markers",
-                    name="Accuracy",
-                )
-            )
-            fig_accuracy.update_layout(
-                title="Epoch-wise Accuracy",
-                xaxis_title="Epoch",
-                yaxis_title="Accuracy",
-            )
-            st.plotly_chart(fig_accuracy)
-        else:
-            col1, col2 = st.columns(2)
-            col1.markdown(
-                f"<div class='metric-card'><h3>R² Score</h3><p>{best_test_r2:.4f}</p></div>",
-                unsafe_allow_html=True,
-            )
-            col2.markdown(
-                f"<div class='metric-card'><h3>MAE</h3><p>{best_test_mae:.4f}</p></div>",
-                unsafe_allow_html=True,
-            )
+                    # Configure optimizer and loss function
+                    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-            # Plot performance graph for loss
-            fig_loss = go.Figure()
-            fig_loss.add_trace(
-                go.Scatter(
-                    x=list(range(len(epoch_losses))),
-                    y=epoch_losses,
-                    mode="lines+markers",
-                    name="Loss",
-                )
-            )
-            fig_loss.update_layout(
-                title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
-            )
-            st.plotly_chart(fig_loss)
+                    if task_type == "Classification":
+                        loss_fn = F.cross_entropy
+                        train_fn = train_classification
+                    else:
+                        loss_fn = F.mse_loss
+                        train_fn = train_regression
 
-            # Plot performance graph for R² score
-            fig_r2 = go.Figure()
-            fig_r2.add_trace(
-                go.Scatter(
-                    x=list(range(len(epoch_r2_scores))),
-                    y=epoch_r2_scores,
-                    mode="lines+markers",
-                    name="R² Score",
-                )
-            )
-            fig_r2.update_layout(
-                title="Epoch-wise R² Score",
-                xaxis_title="Epoch",
-                yaxis_title="R² Score",
-            )
-            st.plotly_chart(fig_r2)
-    
-    
-    except Exception as e:
-        st.error(f"An error occurred during training: {str(e)}")
-        print(str(e))
+                    # Start training
+                    if task_type == "Classification":
+                        (
+                            trained_model,
+                            best_test_accuracy,
+                            best_test_loss,
+                            epoch_losses,
+                            epoch_accuracies,
+                        ) = train_classification(
+                            num_epochs,
+                            model,
+                            optimizer,
+                            loss_fn,
+                            temporal_graphs,
+                            label="PARTS",
+                            device=device,
+                            patience=patience,
+                        )
+                        download_model_button(
+                            trained_model, filename="SingleStepGNNClassification.pth"
+                        )
+
+                    else:
+                        if task_forecast is "df":
+                            (
+                                trained_model,
+                                best_test_r2,
+                                best_test_adjusted_r2,
+                                best_test_mae,
+                                epoch_losses,
+                                epoch_r2_scores,
+                                epoch_adjusted_r2_scores
+                            ) = train_regression(
+                                num_epochs,
+                                model,
+                                optimizer,
+                                loss_fn,
+                                temporal_graphs,
+                                label="PARTS",
+                                device=device,
+                                patience=patience,
+                            )
+                        else:
+                            (
+                                trained_model,
+                                best_test_r2,
+                                best_test_adjusted_r2,
+                                best_test_mae,
+                                epoch_losses,
+                                epoch_r2_scores,
+                                epoch_adjusted_r2_scores
+                            ) = train_regression(
+                                num_epochs,
+                                model,
+                                optimizer,
+                                loss_fn,
+                                temporal_graphs,
+                                label="FACILITY",
+                                device=device,
+                                patience=patience,
+                            )
+                        download_model_button(
+                            trained_model, filename="SingleStepGNNRegression.pth"
+                        )
+
+                    # Display results
+                    if task_type == "Classification":
+                        st.success(
+                            f"Training Completed. Best Test Accuracy: {best_test_accuracy:.4f}, Best Test Loss: {best_test_loss:.4f}"
+                        )
+                    else:
+                        st.success(
+                            f"Training Completed. Best R² Score: {best_test_r2:.4f}, Best MAE: {best_test_mae:.4f}"
+                        )
+
+                    # Dashboard for Model Performance
+                    st.subheader("Model Performance Dashboard")
+
+                    # Custom CSS for styling
+                    st.markdown(
+                        """
+                        <style>
+                        .metric-card {
+                            
+                            padding: 20px;
+                            border-radius: 10px;
+                            margin: 10px;
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                            transition: transform 0.3s ease-in-out;
+                        }
+                        .metric-card:hover {
+                            transform: scale(1.05);
+                        }
+                        </style>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                    # Create columns for metrics
+
+                    if task_type == "Classification":
+                        col1, col2 = st.columns(2)
+                        col1.markdown(
+                            f"<div class='metric-card'><h3>Accuracy</h3><p>{best_test_accuracy:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+                        col2.markdown(
+                            f"<div class='metric-card'><h3>Loss</h3><p>{best_test_loss:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        # Plot performance graph for loss
+                        fig_loss = go.Figure()
+                        fig_loss.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_losses))),
+                                y=epoch_losses,
+                                mode="lines+markers",
+                                name="Loss",
+                            )
+                        )
+                        fig_loss.update_layout(
+                            title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
+                        )
+                        st.plotly_chart(fig_loss)
+
+                        # Plot performance graph for accuracy
+                        fig_accuracy = go.Figure()
+                        fig_accuracy.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_accuracies))),
+                                y=epoch_accuracies,
+                                mode="lines+markers",
+                                name="Accuracy",
+                            )
+                        )
+                        fig_accuracy.update_layout(
+                            title="Epoch-wise Accuracy",
+                            xaxis_title="Epoch",
+                            yaxis_title="Accuracy",
+                        )
+                        st.plotly_chart(fig_accuracy)
+                    else:
+                        col1, col2, col3 = st.columns(3)
+                        col1.markdown(
+                            f"<div class='metric-card'><h3>R² Score</h3><p>{best_test_r2:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+                        col2.markdown(
+                            f"<div class='metric-card'><h3>Adjusted R² Score</h3><p>{best_test_adjusted_r2:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+                        col3.markdown(
+                            f"<div class='metric-card'><h3>MAE</h3><p>{best_test_mae:.4f}</p></div>",
+                            unsafe_allow_html=True,
+                        )
+
+                        # Plot performance graph for loss
+                        fig_loss = go.Figure()
+                        fig_loss.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_losses))),
+                                y=epoch_losses,
+                                mode="lines+markers",
+                                name="Loss",
+                            )
+                        )
+                        fig_loss.update_layout(
+                            title="Epoch-wise Loss", xaxis_title="Epoch", yaxis_title="Loss"
+                        )
+                        st.plotly_chart(fig_loss)
+
+                        # Plot performance graph for R² score
+                        fig_r2 = go.Figure()
+                        fig_r2.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_r2_scores))),
+                                y=epoch_r2_scores,
+                                mode="lines+markers",
+                                name="R² Score",
+                            )
+                        )
+                        fig_r2.update_layout(
+                            title="Epoch-wise R² Score",
+                            xaxis_title="Epoch",
+                            yaxis_title="R² Score",
+                        )
+                        st.plotly_chart(fig_r2)
+
+                        # Plot performance graph for Adj R² score
+                        fig_adjr2 = go.Figure()
+                        fig_adjr2.add_trace(
+                            go.Scatter(
+                                x=list(range(len(epoch_adjusted_r2_scores))),
+                                y=epoch_adjusted_r2_scores,
+                                mode="lines+markers",
+                                name="Adjusted R² Score",
+                            )
+                        )
+                        fig_adjr2.update_layout(
+                            title="Epoch-wise Adjusted R² Score",
+                            xaxis_title="Epoch",
+                            yaxis_title="Adjusted R² Score",
+                        )
+                        st.plotly_chart(fig_adjr2)   
+                
+                except Exception as e:
+                    st.error(f"An error occurred during training: {str(e)}")
+                    print(str(e))                
+        except Exception as e:
+                st.error(f"An error occurred during training: {str(e)}")
+                print(str(e))
+
+else:
+    st.sidebar.warning("Please upload the metadata.json file")

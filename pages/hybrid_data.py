@@ -11,7 +11,7 @@ data_source = st.sidebar.radio(
     "Select Data Source", ["Local Directory", "Server"]
 )
 version = st.sidebar.text_input(
-    "Enter Version of the fetch", "NSS_1000_12", key="hybridversion"
+    "Enter Version of the fetch", "NSS_1000_12_Simulation", key="hybridversion"
 )
 local_dir = "./data"
 if data_source == "Local Directory":
@@ -40,7 +40,7 @@ else:  # Server
 
     if server_url:
         version = st.sidebar.text_input(
-            "Enter Version of the fetch", "NSS_1000_12", key="version"
+            "Enter Version of the fetch", "NSS_1000_12_Simulation", key="version"
         )
         base_url = os.getenv("SERVER_URL")
         try:

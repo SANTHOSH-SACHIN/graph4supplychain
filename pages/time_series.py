@@ -191,7 +191,7 @@ data_source = st.sidebar.radio(
     "Select Data Source", ["Local Directory", "Server"]
 )
 version = st.sidebar.text_input(
-    "Enter Version of the fetch", "NSS_1000_12", key="ts_version"
+    "Enter Version of the fetch", "NSS_1000_12_Simulation", key="ts_version"
 )
 local_dir = st.sidebar.text_input("Enter local directory path", "./data")
 if data_source == "Local Directory":
