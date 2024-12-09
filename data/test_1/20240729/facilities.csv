@@ -1,0 +1,301 @@
+id,name,type,location,max_capacity,operating_cost
+F_001,Facility_1,external,Arizona,6809,48.69424268032586
+F_002,Facility_2,external,Texas,1972,122.2045923979892
+F_003,Facility_3,external,Arizona,9138,69.09778105828838
+F_004,Facility_4,external,New York,4001,192.29918854147073
+F_005,Facility_5,external,Texas,1337,105.81895284233079
+F_006,Facility_6,external,New York,2144,90.98244106228313
+F_007,Facility_7,external,Washington,8939,142.14963973917074
+F_008,Facility_8,external,Massachusetts,9069,119.08667925031554
+F_009,Facility_9,external,Washington,9467,83.29996994948296
+F_010,Facility_10,external,Washington,6897,154.18802752825798
+F_011,Facility_11,external,New York,9430,17.76135866358091
+F_012,Facility_12,external,Massachusetts,8313,52.33417030686697
+F_013,Facility_13,external,Florida,5954,90.8236822682383
+F_014,Facility_14,external,Georgia,1213,125.06681605238275
+F_015,Facility_15,external,Florida,7153,48.123260639818554
+F_016,Facility_16,external,Texas,6816,143.10244618714958
+F_017,Facility_17,external,Washington,3739,137.1612644249576
+F_018,Facility_18,external,Georgia,2334,199.08011815499066
+F_019,Facility_19,external,Georgia,6215,20.276112623464265
+F_020,Facility_20,external,Texas,6811,55.6949783425996
+F_021,Facility_21,external,Texas,9249,140.0000475893153
+F_022,Facility_22,external,Massachusetts,2709,58.70377950964342
+F_023,Facility_23,external,California,1497,135.15485722187208
+F_024,Facility_24,external,Washington,1147,126.26811341396693
+F_025,Facility_25,external,Washington,2459,64.09586272100421
+F_026,Facility_26,external,Georgia,5230,171.42207871252333
+F_027,Facility_27,external,Texas,6433,172.5638620705591
+F_028,Facility_28,external,California,9033,79.19310132613617
+F_029,Facility_29,external,Washington,2285,172.1443891033546
+F_030,Facility_30,external,Washington,1074,57.9993355897907
+F_031,Facility_31,external,Washington,7541,86.80397389464002
+F_032,Facility_32,external,Georgia,9829,31.93284042303841
+F_033,Facility_33,external,Texas,2280,186.57339119606524
+F_034,Facility_34,external,Oregon,8350,74.28191181879123
+F_035,Facility_35,external,Texas,5776,65.9814881325114
+F_036,Facility_36,external,Oregon,1212,117.91826878156748
+F_037,Facility_37,external,Oregon,7439,75.71752734194888
+F_038,Facility_38,external,Texas,7311,30.609716833655504
+F_039,Facility_39,external,New York,9050,175.915235785562
+F_040,Facility_40,external,Washington,7846,15.143717266114116
+F_041,Facility_41,external,Massachusetts,9065,154.25401868353694
+F_042,Facility_42,external,Texas,8039,107.0079760323691
+F_043,Facility_43,external,New York,8916,91.47879279444072
+F_044,Facility_44,external,Arizona,9581,198.25922402747324
+F_045,Facility_45,external,Georgia,3733,17.097674539827356
+F_046,Facility_46,external,Texas,9251,165.90145182508775
+F_047,Facility_47,external,Washington,9632,165.5144292677212
+F_048,Facility_48,external,Arizona,6661,113.15142213076655
+F_049,Facility_49,external,Arizona,9008,43.35110523060517
+F_050,Facility_50,external,California,1051,165.1025286237574
+F_051,Facility_51,external,Massachusetts,8892,51.810951537057825
+F_052,Facility_52,external,California,4831,79.40878582672305
+F_053,Facility_53,external,Washington,6498,182.62423471443478
+F_054,Facility_54,external,California,9852,54.01495463488766
+F_055,Facility_55,external,Massachusetts,6586,137.39892106291592
+F_056,Facility_56,external,Washington,6838,78.66712817056407
+F_057,Facility_57,external,Washington,6239,82.8011893851164
+F_058,Facility_58,external,New York,1059,82.92942599584939
+F_059,Facility_59,external,Florida,7585,119.56438421547075
+F_060,Facility_60,external,Georgia,2359,73.61728084460674
+F_061,Facility_61,external,New York,8674,150.22156037017393
+F_062,Facility_62,external,Georgia,7428,29.41957203769955
+F_063,Facility_63,external,California,3876,10.540825259691252
+F_064,Facility_64,external,Oregon,7914,160.242833849593
+F_065,Facility_65,external,New York,1138,42.56473325141134
+F_066,Facility_66,external,Florida,2037,107.2618849224981
+F_067,Facility_67,external,Georgia,2131,182.82673739563398
+F_068,Facility_68,external,Oregon,8921,13.518505825457687
+F_069,Facility_69,external,Oregon,8488,141.2278501927163
+F_070,Facility_70,external,Georgia,5488,24.988446629195945
+F_071,Facility_71,external,Georgia,4135,87.1206719514991
+F_072,Facility_72,external,Florida,6692,56.31659105414786
+F_073,Facility_73,external,Oregon,6785,180.63948132809816
+F_074,Facility_74,external,Texas,1319,49.95982451422884
+F_075,Facility_75,external,Oregon,9888,131.2046815061787
+F_076,Facility_76,external,New York,1765,52.670480803775924
+F_077,Facility_77,external,Georgia,7307,134.16459786941783
+F_078,Facility_78,external,Oregon,1484,95.11880257174693
+F_079,Facility_79,external,Texas,1898,125.55550747048183
+F_080,Facility_80,external,Florida,2658,167.38762798887313
+F_081,Facility_81,external,Georgia,6734,53.6453792238243
+F_082,Facility_82,external,Florida,4739,189.42757013951356
+F_083,Facility_83,external,Florida,1313,49.68078950278584
+F_084,Facility_84,external,Arizona,9458,160.61265382471018
+F_085,Facility_85,external,Texas,1219,148.21848914167867
+F_086,Facility_86,external,Georgia,8531,136.88975342118476
+F_087,Facility_87,external,Massachusetts,4200,120.78529194673798
+F_088,Facility_88,external,Florida,2401,137.85572996679747
+F_089,Facility_89,external,Arizona,5651,60.59980373530695
+F_090,Facility_90,external,Washington,8205,172.32361029417007
+F_091,Facility_91,external,Arizona,9327,142.26188878415266
+F_092,Facility_92,external,Oregon,6964,112.0950389580646
+F_093,Facility_93,external,New York,9390,137.30303407231628
+F_094,Facility_94,external,Florida,4518,18.825862890869008
+F_095,Facility_95,external,Massachusetts,6910,123.13374010116627
+F_096,Facility_96,external,Oregon,7109,173.22850078267388
+F_097,Facility_97,external,Arizona,7506,197.73213320076212
+F_098,Facility_98,external,Florida,8044,184.6464380576836
+F_099,Facility_99,external,Oregon,1907,21.228661756440776
+F_100,Facility_100,external,Florida,2363,173.88619401935355
+F_101,Facility_101,external,Texas,1799,79.91550584991396
+F_102,Facility_102,external,Georgia,7971,89.50036898657864
+F_103,Facility_103,external,Massachusetts,7416,35.19917664055262
+F_104,Facility_104,external,Oregon,4110,138.55072081695002
+F_105,Facility_105,external,Oregon,8454,25.712327523901703
+F_106,Facility_106,external,Massachusetts,2325,157.4143909490768
+F_107,Facility_107,external,Massachusetts,6223,135.69926819541524
+F_108,Facility_108,external,Texas,1998,64.2929879074437
+F_109,Facility_109,external,Texas,3564,55.650547786612144
+F_110,Facility_110,external,California,5731,101.95779787115096
+F_111,Facility_111,external,Massachusetts,4482,37.09237410834075
+F_112,Facility_112,external,California,6086,70.46470763026129
+F_113,Facility_113,external,Washington,3910,143.89769374454588
+F_114,Facility_114,external,Washington,5927,110.72480741391811
+F_115,Facility_115,external,California,7514,113.36070828504648
+F_116,Facility_116,external,Texas,9527,95.02890524218155
+F_117,Facility_117,external,Georgia,2586,138.10231536487484
+F_118,Facility_118,external,Florida,4657,30.104919709290574
+F_119,Facility_119,external,Arizona,9175,173.2110600433136
+F_120,Facility_120,external,California,5430,141.89875177510575
+F_121,Facility_121,external,Oregon,3142,95.92366212435441
+F_122,Facility_122,external,Massachusetts,1932,40.1521696958046
+F_123,Facility_123,external,Washington,9094,178.89996404425688
+F_124,Facility_124,external,New York,8015,12.673042426871174
+F_125,Facility_125,external,Oregon,3456,164.26062857303472
+F_126,Facility_126,external,Georgia,4695,33.78377103514474
+F_127,Facility_127,external,Florida,8187,24.986902709796514
+F_128,Facility_128,external,Oregon,5002,38.17820449299593
+F_129,Facility_129,external,California,7267,136.06955281392305
+F_130,Facility_130,external,Texas,5487,78.8469980924535
+F_131,Facility_131,external,California,3827,152.01549589319796
+F_132,Facility_132,external,Oregon,1695,56.46260382442832
+F_133,Facility_133,external,New York,3337,12.868075601796953
+F_134,Facility_134,external,Oregon,2444,40.63555729333564
+F_135,Facility_135,external,Florida,8754,154.60478819076565
+F_136,Facility_136,external,Georgia,2932,83.49795202918742
+F_137,Facility_137,external,Texas,8384,168.67452828443913
+F_138,Facility_138,external,Florida,6057,30.899556338873605
+F_139,Facility_139,external,Texas,8543,109.1272779863022
+F_140,Facility_140,external,Massachusetts,9214,149.6388239283355
+F_141,Facility_141,external,California,4222,36.17857130088663
+F_142,Facility_142,external,Massachusetts,6875,161.22274252240922
+F_143,Facility_143,external,New York,1296,193.68800565823463
+F_144,Facility_144,external,Massachusetts,2148,106.05291122720043
+F_145,Facility_145,external,Oregon,8920,154.54918428353437
+F_146,Facility_146,external,California,9878,128.40226822756003
+F_147,Facility_147,external,Arizona,8082,47.894578738008654
+F_148,Facility_148,external,Texas,2835,18.604184311120612
+F_149,Facility_149,external,Washington,3096,86.02528645424236
+F_150,Facility_150,external,Washington,9900,65.19361857377349
+F_151,Facility_151,external,Texas,7446,39.77132250063214
+F_152,Facility_152,external,Georgia,7229,120.01805326271203
+F_153,Facility_153,external,Massachusetts,9227,105.04543823776956
+F_154,Facility_154,external,Washington,4551,166.06245111861637
+F_155,Facility_155,external,California,6011,38.135223955862166
+F_156,Facility_156,external,New York,1690,139.6059378758039
+F_157,Facility_157,external,Florida,7716,101.91069244180291
+F_158,Facility_158,external,New York,8542,46.95175683047563
+F_159,Facility_159,external,Oregon,5459,111.71896833111848
+F_160,Facility_160,external,Texas,1299,78.63010404698575
+F_161,Facility_161,external,Florida,2418,78.96272773856718
+F_162,Facility_162,external,Arizona,1907,146.56170240086553
+F_163,Facility_163,external,Florida,2673,87.64698530025069
+F_164,Facility_164,external,California,8110,144.35320523509048
+F_165,Facility_165,external,Massachusetts,3446,110.39322963730804
+F_166,Facility_166,external,Washington,4015,104.04171112756977
+F_167,Facility_167,external,Georgia,4988,30.67090164227112
+F_168,Facility_168,external,New York,6604,149.05977567164203
+F_169,Facility_169,external,Florida,7530,88.5680033335428
+F_170,Facility_170,external,Washington,8387,54.36889595817018
+F_171,Facility_171,external,Texas,8899,38.498860061990136
+F_172,Facility_172,external,Florida,4358,185.38858645488304
+F_173,Facility_173,external,Oregon,2137,147.06563959045585
+F_174,Facility_174,external,New York,8254,180.12868217761934
+F_175,Facility_175,external,Florida,7384,130.28066933476708
+F_176,Facility_176,external,California,8804,125.8039106641363
+F_177,Facility_177,external,Arizona,7206,164.3542853415865
+F_178,Facility_178,external,Oregon,5958,168.5276459549213
+F_179,Facility_179,external,Arizona,7205,159.49210475129067
+F_180,Facility_180,external,California,4962,70.1894103139361
+F_181,Facility_181,external,Florida,1152,156.3558357456234
+F_182,Facility_182,external,Arizona,2042,32.531971716045696
+F_183,Facility_183,external,Washington,8750,100.74591216579954
+F_184,Facility_184,external,Georgia,4463,31.139620746805143
+F_185,Facility_185,external,California,9404,113.92560071552522
+F_186,Facility_186,external,New York,1896,187.11825688108357
+F_187,Facility_187,external,Washington,7232,183.19503539707583
+F_188,Facility_188,external,Washington,2756,27.018168519708933
+F_189,Facility_189,external,Massachusetts,9310,59.60496001975108
+F_190,Facility_190,external,California,2624,136.6460130939522
+F_191,Facility_191,external,Massachusetts,4232,138.47372425246428
+F_192,Facility_192,external,Oregon,2353,99.37592524882905
+F_193,Facility_193,external,Oregon,6683,56.403514990787365
+F_194,Facility_194,external,Georgia,3472,188.969972046906
+F_195,Facility_195,external,New York,6829,62.39163725845292
+F_196,Facility_196,external,New York,4356,143.22740327943575
+F_197,Facility_197,external,Oregon,6045,155.31038524569695
+F_198,Facility_198,external,Oregon,5179,81.51247511586075
+F_199,Facility_199,external,Texas,9717,114.28894387996006
+F_200,Facility_200,external,Florida,3636,152.16729270519227
+F_201,Facility_201,external,Oregon,5487,34.043979462789366
+F_202,Facility_202,external,Texas,7397,192.27227911884017
+F_203,Facility_203,external,Oregon,4686,77.05213073314727
+F_204,Facility_204,external,New York,8234,62.73469968674501
+F_205,Facility_205,external,Massachusetts,9472,194.99979800648873
+F_206,Facility_206,external,Oregon,1118,147.4328412636934
+F_207,Facility_207,external,Washington,3391,73.3650662812955
+F_208,Facility_208,external,Oregon,4006,61.41384964418376
+F_209,Facility_209,external,Arizona,7919,136.02495538161142
+F_210,Facility_210,external,Arizona,1970,162.44718877025903
+F_211,Facility_211,lam,Arizona,9941,80.44652676152695
+F_212,Facility_212,lam,Georgia,8063,52.831854952469534
+F_213,Facility_213,lam,Georgia,5668,96.98159586318481
+F_214,Facility_214,lam,New York,6399,131.74620366696786
+F_215,Facility_215,lam,New York,3141,87.78126465479096
+F_216,Facility_216,lam,New York,2008,184.88635718042883
+F_217,Facility_217,lam,Massachusetts,8430,192.714029961204
+F_218,Facility_218,lam,Georgia,3634,110.94799433989613
+F_219,Facility_219,lam,Arizona,5720,148.96301350048114
+F_220,Facility_220,lam,Massachusetts,4174,137.4302531134175
+F_221,Facility_221,lam,California,3781,63.95135359569713
+F_222,Facility_222,lam,New York,4016,86.89247375058379
+F_223,Facility_223,lam,Georgia,8349,28.46955414439877
+F_224,Facility_224,lam,New York,3385,117.79775628249295
+F_225,Facility_225,lam,Arizona,6204,105.08372290602986
+F_226,Facility_226,lam,Georgia,6071,75.9739906234562
+F_227,Facility_227,lam,Washington,2157,30.54817978359532
+F_228,Facility_228,lam,Oregon,1352,113.37071907431539
+F_229,Facility_229,lam,Georgia,2229,150.17258761291683
+F_230,Facility_230,lam,New York,2957,169.5632983612483
+F_231,Facility_231,lam,Texas,5184,116.2670540214118
+F_232,Facility_232,lam,Arizona,7985,184.6797159882962
+F_233,Facility_233,lam,Oregon,6075,72.87734444548133
+F_234,Facility_234,lam,New York,4180,125.30013461390602
+F_235,Facility_235,lam,Arizona,3018,19.35375968931597
+F_236,Facility_236,lam,Florida,9200,80.73421523284188
+F_237,Facility_237,lam,New York,2859,105.42970651566517
+F_238,Facility_238,lam,Georgia,6058,24.57668158643331
+F_239,Facility_239,lam,Massachusetts,4065,28.796281246130324
+F_240,Facility_240,lam,Oregon,5087,141.60744966490722
+F_241,Facility_241,lam,Washington,7606,104.42839764429813
+F_242,Facility_242,lam,Georgia,5005,145.64338927326295
+F_243,Facility_243,lam,Massachusetts,2909,58.5749000151724
+F_244,Facility_244,lam,Georgia,6927,190.13586183089515
+F_245,Facility_245,lam,Washington,3791,124.10172641195665
+F_246,Facility_246,lam,Florida,2711,95.08873626298572
+F_247,Facility_247,lam,Florida,6198,79.99148866599981
+F_248,Facility_248,lam,Texas,4017,194.91096674553717
+F_249,Facility_249,lam,Florida,6190,105.63352335469348
+F_250,Facility_250,lam,California,8092,81.35800859602453
+F_251,Facility_251,lam,California,1942,58.11058636137299
+F_252,Facility_252,lam,Massachusetts,4012,113.20104481231294
+F_253,Facility_253,lam,Oregon,3304,72.54997134859474
+F_254,Facility_254,lam,New York,1737,138.06159305398828
+F_255,Facility_255,lam,California,1039,190.33901306277465
+F_256,Facility_256,lam,Texas,5828,12.725680478130652
+F_257,Facility_257,lam,Georgia,6598,75.80462961268643
+F_258,Facility_258,lam,Georgia,9043,114.61510955715381
+F_259,Facility_259,lam,Arizona,9017,101.48025424581049
+F_260,Facility_260,lam,Washington,2173,162.65717998009444
+F_261,Facility_261,lam,Washington,1158,95.946684191709
+F_262,Facility_262,lam,California,6566,58.386093985968856
+F_263,Facility_263,lam,Oregon,8859,179.0854407215838
+F_264,Facility_264,lam,California,7185,88.10748303050481
+F_265,Facility_265,lam,New York,6985,178.05731256754842
+F_266,Facility_266,lam,California,5416,26.46984442637199
+F_267,Facility_267,lam,Georgia,5394,112.05107218526288
+F_268,Facility_268,lam,Arizona,6339,111.97837404295339
+F_269,Facility_269,lam,New York,5804,102.72199032372443
+F_270,Facility_270,lam,Florida,6742,31.58596648948437
+F_271,Facility_271,lam,Massachusetts,7017,69.82484967665567
+F_272,Facility_272,lam,New York,9372,34.73925685447084
+F_273,Facility_273,lam,Washington,2486,177.76047501003268
+F_274,Facility_274,lam,Georgia,3430,104.8229862460522
+F_275,Facility_275,lam,Arizona,4657,138.22687463526307
+F_276,Facility_276,lam,Washington,1108,117.02432773896062
+F_277,Facility_277,lam,Oregon,6116,134.73278064988313
+F_278,Facility_278,lam,Washington,5737,56.29313344279444
+F_279,Facility_279,lam,Massachusetts,7829,60.26683368536074
+F_280,Facility_280,lam,Texas,5413,190.67342424637243
+F_281,Facility_281,lam,Arizona,7512,81.99540049219755
+F_282,Facility_282,lam,Oregon,4176,77.87900611025427
+F_283,Facility_283,lam,California,8427,173.23491470126763
+F_284,Facility_284,lam,Washington,7607,10.586128021105061
+F_285,Facility_285,lam,Arizona,6304,179.48252237193583
+F_286,Facility_286,lam,New York,4405,49.78467696860334
+F_287,Facility_287,lam,Florida,9725,162.84003237334042
+F_288,Facility_288,lam,California,6315,154.22931458890514
+F_289,Facility_289,lam,Washington,5153,24.056738228582766
+F_290,Facility_290,lam,Georgia,7445,118.13375849106214
+F_291,Facility_291,lam,Massachusetts,8243,14.821689963270266
+F_292,Facility_292,lam,Florida,6041,18.432531852399208
+F_293,Facility_293,lam,Georgia,9318,48.47999149679375
+F_294,Facility_294,lam,Georgia,6480,197.02388236206872
+F_295,Facility_295,lam,California,8068,134.6448302194628
+F_296,Facility_296,lam,California,9353,170.2062709304598
+F_297,Facility_297,lam,California,8359,102.5919135395612
+F_298,Facility_298,lam,Washington,5563,194.34419272414743
+F_299,Facility_299,lam,Washington,7751,25.66282754718207
+F_300,Facility_300,lam,Washington,1061,63.490960107050725

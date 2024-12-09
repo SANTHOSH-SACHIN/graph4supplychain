@@ -1,0 +1,101 @@
+id,name,location,reliability,size,size_category,supplied_part_types
+S_001,Supplier_1,New York,0.6339050247457388,198,small,[]
+S_002,Supplier_2,Texas,0.6290790603364123,259,small,"['chemical', 'plastic_component', 'metal_rod', 'electronic_component', 'control_panel', 'housing_unit', 'power_unit', 'sensor_array', 'circuit_board']"
+S_003,Supplier_3,California,0.7682574461841473,164,small,"['chemical', 'plastic_component', 'metal_sheet', 'metal_rod', 'sensor_array', 'circuit_board']"
+S_004,Supplier_4,Arizona,0.899693009397706,119,small,"['electronic_component', 'chemical', 'metal_rod', 'metal_sheet']"
+S_005,Supplier_5,Georgia,0.8918646486459728,129,small,"['housing_unit', 'control_panel', 'circuit_board', 'power_unit', 'sensor_array']"
+S_006,Supplier_6,Georgia,0.6114186673311165,154,small,[]
+S_007,Supplier_7,Massachusetts,0.6640818870075025,197,small,"['metal_sheet', 'electronic_component', 'chemical', 'plastic_component']"
+S_008,Supplier_8,Florida,0.8576179910361631,113,small,"['chemical', 'plastic_component', 'electronic_component', 'circuit_board', 'control_panel', 'housing_unit', 'power_unit']"
+S_009,Supplier_9,Oregon,0.8618607011980696,224,small,"['housing_unit', 'control_panel', 'sensor_array', 'power_unit', 'circuit_board']"
+S_010,Supplier_10,Texas,0.7964208325787498,174,small,"['chemical', 'plastic_component', 'metal_rod', 'metal_sheet']"
+S_011,Supplier_11,California,0.9731731860862725,164,small,"['metal_rod', 'electronic_component', 'sensor_array']"
+S_012,Supplier_12,Georgia,0.6860257383380735,232,small,"['metal_rod', 'electronic_component', 'chemical', 'sensor_array', 'power_unit']"
+S_013,Supplier_13,Oregon,0.6942250943899798,229,small,"['metal_sheet', 'metal_rod', 'electronic_component', 'plastic_component', 'power_unit', 'circuit_board', 'sensor_array', 'housing_unit']"
+S_014,Supplier_14,California,0.864750626709013,273,small,"['plastic_component', 'metal_sheet']"
+S_015,Supplier_15,Washington,0.7855263553791649,148,small,['plastic_component']
+S_016,Supplier_16,Washington,0.6311573213160371,101,small,"['plastic_component', 'metal_sheet', 'metal_rod']"
+S_017,Supplier_17,Washington,0.744373863282124,107,small,"['metal_rod', 'plastic_component', 'metal_sheet', 'chemical', 'electronic_component', 'circuit_board', 'housing_unit']"
+S_018,Supplier_18,Florida,0.8690185116690428,154,small,"['metal_sheet', 'chemical', 'metal_rod', 'electronic_component']"
+S_019,Supplier_19,Washington,0.661100306876605,187,small,"['metal_rod', 'metal_sheet', 'electronic_component']"
+S_020,Supplier_20,Arizona,0.8523728357312811,102,small,[]
+S_021,Supplier_21,Washington,0.7619499305896513,270,small,"['electronic_component', 'metal_rod', 'plastic_component']"
+S_022,Supplier_22,Florida,0.9002229161887159,128,small,"['housing_unit', 'control_panel', 'sensor_array']"
+S_023,Supplier_23,Massachusetts,0.625994777937322,237,small,[]
+S_024,Supplier_24,Washington,0.6222462853333397,179,small,"['electronic_component', 'metal_rod', 'metal_sheet']"
+S_025,Supplier_25,Oregon,1.0233509628859154,146,small,[]
+S_026,Supplier_26,Arizona,0.9511912929870252,205,small,"['electronic_component', 'chemical', 'metal_rod', 'housing_unit', 'sensor_array', 'control_panel', 'power_unit']"
+S_027,Supplier_27,Massachusetts,0.9305871939060071,292,small,"['electronic_component', 'plastic_component']"
+S_028,Supplier_28,Arizona,0.6809438431040097,232,small,"['metal_rod', 'chemical', 'plastic_component']"
+S_029,Supplier_29,New York,0.8327934070080882,224,small,['plastic_component']
+S_030,Supplier_30,Arizona,0.752248383811336,255,small,"['plastic_component', 'metal_rod', 'metal_sheet', 'electronic_component', 'chemical']"
+S_031,Supplier_31,Washington,0.9183562998502434,286,small,"['circuit_board', 'power_unit', 'housing_unit']"
+S_032,Supplier_32,Oregon,0.8445597338358605,236,small,"['metal_rod', 'metal_sheet', 'chemical', 'electronic_component']"
+S_033,Supplier_33,Florida,0.8792282729764969,193,small,[]
+S_034,Supplier_34,Massachusetts,0.9218100439523639,145,small,[]
+S_035,Supplier_35,Georgia,0.8921753176998811,151,small,[]
+S_036,Supplier_36,Texas,0.8626901642410424,184,small,"['electronic_component', 'chemical', 'plastic_component']"
+S_037,Supplier_37,Georgia,0.806931353791354,217,small,"['electronic_component', 'chemical', 'metal_sheet', 'plastic_component', 'metal_rod']"
+S_038,Supplier_38,Georgia,0.9614437881368537,253,small,"['metal_sheet', 'metal_rod', 'electronic_component', 'plastic_component']"
+S_039,Supplier_39,Texas,0.8070980676512809,236,small,"['metal_sheet', 'chemical', 'metal_rod', 'electronic_component', 'plastic_component']"
+S_040,Supplier_40,California,0.9356660722196278,104,small,"['plastic_component', 'electronic_component', 'metal_rod', 'circuit_board', 'power_unit', 'control_panel', 'sensor_array']"
+S_041,Supplier_41,Oregon,0.8032886473082926,406,medium,"['metal_sheet', 'control_panel', 'sensor_array']"
+S_042,Supplier_42,Washington,0.6911525246551421,323,medium,[]
+S_043,Supplier_43,Florida,0.8015575907383622,391,medium,[]
+S_044,Supplier_44,Florida,0.9831441028840472,382,medium,[]
+S_045,Supplier_45,Massachusetts,0.8711219183177347,585,medium,"['metal_rod', 'chemical', 'plastic_component', 'electronic_component', 'power_unit', 'circuit_board', 'housing_unit', 'sensor_array']"
+S_046,Supplier_46,Arizona,0.6466808196159851,311,medium,"['metal_sheet', 'plastic_component', 'electronic_component', 'metal_rod', 'chemical']"
+S_047,Supplier_47,Arizona,0.85872779173463,395,medium,"['metal_sheet', 'chemical', 'metal_rod']"
+S_048,Supplier_48,Massachusetts,0.9621412614926798,353,medium,"['plastic_component', 'chemical', 'metal_sheet']"
+S_049,Supplier_49,Washington,0.7572721215549311,322,medium,"['plastic_component', 'metal_sheet', 'chemical', 'metal_rod', 'electronic_component']"
+S_050,Supplier_50,New York,0.9418294130906657,399,medium,"['electronic_component', 'plastic_component']"
+S_051,Supplier_51,Washington,0.8580637766933317,527,medium,"['electronic_component', 'plastic_component']"
+S_052,Supplier_52,Oregon,0.6451084370544472,499,medium,"['sensor_array', 'power_unit', 'control_panel']"
+S_053,Supplier_53,Massachusetts,0.6196149684457318,366,medium,['plastic_component']
+S_054,Supplier_54,Florida,0.8565903522303032,315,medium,"['metal_rod', 'metal_sheet', 'plastic_component', 'chemical', 'electronic_component']"
+S_055,Supplier_55,Arizona,0.7755576149638777,514,medium,[]
+S_056,Supplier_56,Washington,0.8279705922312173,510,medium,"['plastic_component', 'metal_sheet', 'chemical', 'electronic_component']"
+S_057,Supplier_57,New York,0.8530351789906365,587,medium,"['electronic_component', 'sensor_array']"
+S_058,Supplier_58,Arizona,0.8297065355357427,489,medium,"['electronic_component', 'metal_rod', 'metal_sheet']"
+S_059,Supplier_59,Massachusetts,0.8245064660388477,550,medium,"['metal_sheet', 'plastic_component', 'metal_rod', 'chemical', 'electronic_component']"
+S_060,Supplier_60,Florida,0.9314287860232694,492,medium,"['housing_unit', 'sensor_array', 'control_panel', 'power_unit']"
+S_061,Supplier_61,California,0.6311957521169367,551,medium,"['chemical', 'metal_sheet', 'metal_rod', 'plastic_component', 'electronic_component']"
+S_062,Supplier_62,Texas,0.7114429162705568,477,medium,[]
+S_063,Supplier_63,Washington,0.8827193998446989,399,medium,"['metal_rod', 'plastic_component', 'metal_sheet', 'electronic_component', 'chemical']"
+S_064,Supplier_64,Arizona,0.8868336922344153,595,medium,"['chemical', 'metal_rod']"
+S_065,Supplier_65,Texas,0.8540999050938723,383,medium,[]
+S_066,Supplier_66,Washington,0.942636600928301,347,medium,[]
+S_067,Supplier_67,Oregon,0.7192761752261779,530,medium,[]
+S_068,Supplier_68,Arizona,0.6698356726013442,561,medium,"['chemical', 'metal_rod', 'metal_sheet', 'electronic_component', 'plastic_component']"
+S_069,Supplier_69,Texas,0.6877383527814362,301,medium,"['chemical', 'metal_sheet', 'electronic_component']"
+S_070,Supplier_70,Oregon,0.9958771368010343,444,medium,[]
+S_071,Supplier_71,Washington,0.9215547878911517,444,medium,"['electronic_component', 'metal_sheet', 'chemical', 'plastic_component', 'circuit_board', 'control_panel', 'power_unit', 'sensor_array', 'housing_unit']"
+S_072,Supplier_72,Texas,0.8590196153102192,354,medium,[]
+S_073,Supplier_73,Washington,0.6947071033680212,340,medium,[]
+S_074,Supplier_74,Arizona,0.768475596673564,353,medium,[]
+S_075,Supplier_75,California,0.8734294151352915,334,medium,"['electronic_component', 'metal_rod', 'plastic_component']"
+S_076,Supplier_76,Massachusetts,0.7948675812112791,632,large,"['chemical', 'metal_rod', 'electronic_component', 'plastic_component']"
+S_077,Supplier_77,Arizona,0.8860416927288481,649,large,"['chemical', 'plastic_component', 'sensor_array', 'housing_unit', 'power_unit']"
+S_078,Supplier_78,Florida,0.8566239201700353,951,large,[]
+S_079,Supplier_79,Washington,0.7235953471785102,694,large,"['chemical', 'metal_rod', 'plastic_component', 'electronic_component', 'sensor_array', 'housing_unit', 'control_panel', 'circuit_board']"
+S_080,Supplier_80,Texas,0.826457226014648,704,large,"['housing_unit', 'circuit_board', 'power_unit']"
+S_081,Supplier_81,Georgia,0.8429111946460399,703,large,"['metal_rod', 'plastic_component', 'electronic_component', 'chemical', 'metal_sheet']"
+S_082,Supplier_82,Arizona,0.7418045397655044,865,large,['metal_sheet']
+S_083,Supplier_83,Georgia,0.6518638331107195,734,large,"['electronic_component', 'metal_sheet', 'metal_rod']"
+S_084,Supplier_84,New York,0.8761398366472821,780,large,[]
+S_085,Supplier_85,New York,0.6628247466358237,951,large,[]
+S_086,Supplier_86,Arizona,0.9667251626730503,983,large,[]
+S_087,Supplier_87,Florida,0.7243854470961727,687,large,['electronic_component']
+S_088,Supplier_88,Arizona,0.6187660174122088,926,large,['chemical']
+S_089,Supplier_89,Washington,0.6907932341219947,713,large,[]
+S_090,Supplier_90,Washington,0.9419372645738585,926,large,"['electronic_component', 'chemical', 'plastic_component', 'metal_sheet', 'power_unit', 'circuit_board', 'sensor_array']"
+S_091,Supplier_91,Massachusetts,0.7697713587240593,830,large,"['chemical', 'plastic_component']"
+S_092,Supplier_92,Massachusetts,0.7254223378993139,723,large,"['electronic_component', 'plastic_component']"
+S_093,Supplier_93,Texas,0.7531654974725227,691,large,"['chemical', 'metal_rod', 'electronic_component', 'plastic_component']"
+S_094,Supplier_94,Texas,0.8184448220124048,852,large,"['metal_sheet', 'chemical', 'metal_rod', 'plastic_component']"
+S_095,Supplier_95,Arizona,0.8178086030577282,707,large,"['chemical', 'housing_unit']"
+S_096,Supplier_96,Texas,0.7020662189460556,812,large,"['plastic_component', 'electronic_component', 'metal_sheet', 'chemical']"
+S_097,Supplier_97,Oregon,0.6722236063788167,988,large,"['metal_rod', 'chemical', 'plastic_component']"
+S_098,Supplier_98,Arizona,0.8036977606135609,968,large,"['metal_rod', 'metal_sheet', 'plastic_component', 'electronic_component', 'chemical']"
+S_099,Supplier_99,Texas,0.6749154232639322,851,large,[]
+S_100,Supplier_100,Massachusetts,0.8549353033434466,990,large,[]
