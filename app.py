@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import warnings
 from dotenv import load_dotenv
 
+
 warnings.filterwarnings("ignore")
 load_dotenv(dotenv_path='.env.default')
 
@@ -13,6 +14,7 @@ st.set_page_config(
     page_icon="📈",
     layout="wide",
 )
+
 # Main function
 def main():
     st.title("Supply Chain Forecasting & GNN Based Analysis")
