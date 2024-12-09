@@ -122,7 +122,7 @@ with st.sidebar.expander("📊 Data Configuration", expanded=True):
     local_dir = st.text_input("Local Directory Path", "./data")
     version = st.text_input(
         "Enter Version of the fetch",
-        "GNN_1000_12_v2",
+        "NSS_1000_12_Simulation",
         key="train_graph_version",
     )
     q = st.slider("Number of quartiles", min_value=1, max_value=8, value=4)
