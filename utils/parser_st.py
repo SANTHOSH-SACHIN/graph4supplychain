@@ -396,7 +396,7 @@ class TemporalHeterogeneousGraphParser:
                     if edge[self.get_edge_index("PARTSToFACILITY", 'target')] in facility_demand:
                         src = edge[self.get_edge_index("PARTSToFACILITY", 'source')]
                         if src in sa_demand:
-                            sa_demand[src] += [edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]], 0, 0]
+                            sa_demand[src][0] += edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]]
                         else:
                             sa_demand[src] = [edge[self.get_edge_index("PARTSToFACILITY", 'quantity')] * facility_demand[edge[self.get_edge_index("PARTSToFACILITY", 'target')]], 0, 0]
                         
@@ -786,7 +786,7 @@ class TemporalHeterogeneousGraphParser:
         }
         
     def validate_parser(self):
-        test_path = self.local_dir +'/'+ self.version
+        test_path = self.local_dir+ self.version
         if os.path.exists(test_path):
             json_files = glob.glob(os.path.join(test_path, '*.json'))
             if json_files:

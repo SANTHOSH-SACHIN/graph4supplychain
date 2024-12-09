@@ -114,7 +114,7 @@ with st.sidebar.expander("📊 Data Configuration", expanded=True):
     local_dir = st.text_input("Local Directory Path", "./data")
     version = st.text_input(
         "Enter Version of the fetch",
-        "NSS_1000_12",
+        "GNN_1000_12_v2",
         key="train_graph_version",
     )
 
