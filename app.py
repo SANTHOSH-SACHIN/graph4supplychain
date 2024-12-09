@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import warnings
 from dotenv import load_dotenv
 
+
 warnings.filterwarnings("ignore")
 load_dotenv(dotenv_path='.env.default')
 
