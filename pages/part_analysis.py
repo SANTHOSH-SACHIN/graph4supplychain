@@ -151,12 +151,7 @@ partsdf = partsdf.applymap(parse_date)
 
 st.subheader("Parts Dates Preview")
 st.dataframe(partsdf)
-# df_creation = partsdf.map(lambda x: x[0] if isinstance(x, tuple) else pd.NaT)
-# st.subheader("Parts Creation Data Preview")
-# st.dataframe(df_creation)
-# df_expiry = partsdf.map(lambda x: x[1] if isinstance(x, tuple) else pd.NaT)
-# st.subheader("Parts Expiry Data Preview")
-# st.dataframe(df_expiry)
+
 df_creation, df_expiry = preprocess_dataframes(partsdf)
 analysis_type = st.selectbox('Choose Analysis', [
 'Lifetime Analysis', 
