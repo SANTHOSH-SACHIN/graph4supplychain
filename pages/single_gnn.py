@@ -18,7 +18,6 @@ from tempfile import NamedTemporaryFile
 
 st.subheader("Graph Neural Network Training Interface")
 # Model Configuration Section
-
 with st.sidebar.expander("🎯 Task Configuration", expanded=True):
     task_type = st.radio(
         "Select Task Type",
@@ -182,7 +181,6 @@ with st.sidebar.expander("📊 Data Configuration", expanded=True):
     use_local_files = st.checkbox("Use Local Files", value=False)
     # metadata_path = ""
 
-
     local_dir = st.text_input("Local Directory Path", "./data")
     version = st.text_input(
         "Enter Version of the fetch",
@@ -235,8 +233,6 @@ if metadata_file is not None:
                         G=G
                     )
 
-                    # Move model to appropriate device
-                    # device = torch.device("cpu" if torch.cpu.is_available() else "cpu")
                     model = model.to(device)
 
                     # Configure optimizer and loss function
@@ -494,8 +490,6 @@ if metadata_file is not None:
                         G=G
                     )
 
-                    # Move model to appropriate device
-                    # device = torch.device("cpu" if torch.cpu.is_available() else "cpu")
                     model = model.to(device)
 
                     # Configure optimizer and loss function

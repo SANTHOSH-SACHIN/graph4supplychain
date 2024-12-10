@@ -1,7 +1,6 @@
 import streamlit as st
 from ts_models.arima_st import SingleStepARIMA, MultiStepARIMA
 from ts_models.sarima_st import SingleStepSarimaAnalyzer, MultiStepSarimaAnalyzer
-# from ts_models.cnnlstm_st import SingleStepCNNLSTMAnalyzer
 from ts_models.xgboost_st import XGBoostForecaster
 from ts_models.prophet_st import SingleStepProphet, MultiStepProphet
 from utils.parser_st import TemporalHeterogeneousGraphParser
@@ -12,9 +11,6 @@ import os
 import numpy as np
 from ts_models.sarima_updated import sarima_demand_forecast,forecast_node_multistep_sarima
 from tempfile import NamedTemporaryFile
-
-
-#utils
 
 class StreamlitTimeSeriesAnalyzer:
     def __init__(
@@ -36,7 +32,6 @@ class StreamlitTimeSeriesAnalyzer:
                 "multi_step_arima": MultiStepARIMA(self.metadata_path),
                 "single_step_sarima": SingleStepSarimaAnalyzer(self.metadata_path),
                 "multi_step_sarima": MultiStepSarimaAnalyzer(self.metadata_path),
-                # "single_step_cnnlstm": SingleStepCNNLSTMAnalyzer(self.metadata_path),
                 "single_step_xgboost": XGBoostForecaster(self.metadata_path),
                 "multi_step_xgboost": XGBoostForecaster(self.metadata_path),
                 "single_step_prophet": SingleStepProphet(self.metadata_path),
@@ -475,7 +470,3 @@ if metadata_file is not None:
         st.error(f"Error processing data: {str(e)}")
 else:
     st.sidebar.warning("Please upload the metadata.json file")
-
-# st.subheader("Demand Data Preview")
-# st.dataframe(demand_df)
-

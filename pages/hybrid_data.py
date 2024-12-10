@@ -1,4 +1,3 @@
-
 from utils.parser_st import TemporalHeterogeneousGraphParser
 import streamlit as st
 import os
@@ -36,7 +35,6 @@ if data_source == "Local Directory":
 else:  # Server
     st.sidebar.header("Server Settings")
     server_url = os.getenv("SERVER_URL")
-    # st.write(server_url)
 
     if server_url:
         version = st.sidebar.text_input(
@@ -79,26 +77,25 @@ model_choice = st.selectbox(
 if model_choice == "Non-Aggregated Columns":
     part_id_list = []
     part_data = parser.get_extended_df()
-    # st.dataframe(part_data)
+
     labels_df = parser.get_df()
     for x in labels_df.columns:
         part_data[x]["demand"] = labels_df[x]
-    # st.dataframe(labels_df)
 
     for i in labels_df.columns:
         part_id_list.append(i)
 
-    # final_agg = {}
     node_id = st.selectbox("Select part id", labels_df.columns)
     if st.button("Run Forecasting"):
         viz, mape = hm.demand_forecasting(part_data, node_id)
-        st.write("Aggregated MAPE Scores:")
+        st.metric("Aggregated MAPE Scores:", mape)
         st.pyplot(viz)
-        st.write(mape)
 
 elif model_choice == "Aggregated Columns":
     aggregation_method = st.radio(
-        "Select column aggregation type", ["mean", "sum", "min", "max"]
+        "Select Aggregation Method",
+        ("mean", "sum", "median", "min", "max"),
+        horizontal=True,
     )
     part_id_list = []
     labels_df = parser.get_df()
@@ -112,19 +109,7 @@ elif model_choice == "Aggregated Columns":
     for i in labels_df.columns:
         part_id_list.append(i)
 
-    # # final_agg = {}
-    # # node_id = st.selectbox("Select part id", labels_df.columns)
     if st.button("Run Forecasting"):
         viz, mape = hm.aggregated_demand_forecasting(part_data, node_id)
-        # final_agg = agg_mape
-        # Display results
-        st.write("Aggregated MAPE Scores:")
-        # st.write(mape)
-
-        # # for key, values in final_agg.items():
-        # #     if node_id == key:
-        # #         plot = values[0]
-        # #         mape = values[1]
-
+        st.metric("Aggregated MAPE Scores:", mape)
         st.pyplot(viz)
-        st.write(mape)

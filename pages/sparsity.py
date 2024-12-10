@@ -170,8 +170,6 @@ if train_button:
                 G=G
             )
 
-            # Move model to appropriate device
-            # device = torch.device("cpu" if torch.cpu.is_available() else "cpu")
             model = model.to(device)
 
             # Configure optimizer and loss function

@@ -225,9 +225,6 @@ if metadata_file is not None:
 
             G = temporal_graphs[len(temporal_graphs)][1]
 
-            # st.write(G)
-            # Initialize model
-            # device = "cpu"
             model = MultiStepModel(
                 hidden_channels=hidden_channels,
                 out_channels=G.num_classes,

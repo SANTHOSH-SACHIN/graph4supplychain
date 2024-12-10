@@ -14,7 +14,6 @@ import copy
 import matplotlib.pyplot as plt
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_absolute_percentage_error
-# from parser_st import TemporalHeterogeneousGraphParser
 
 def demand_forecasting(part_data, part_id, forecast_steps=5):
     """
@@ -29,36 +28,27 @@ def demand_forecasting(part_data, part_id, forecast_steps=5):
     """
     print(f"Performing demand forecasting for Part ID: {part_id}\n")
     
-    # Validate part ID
     if part_id not in part_data:
         print("Error: Part ID not found.")
         return None
     
     # Retrieve the DataFrame for the selected part ID
     df = part_data[part_id].copy()
-    
-    # Flatten nested columns if needed
     for col in df.columns:
         if col != 'demand' and isinstance(df[col].iloc[0], (list, np.ndarray)):
             df[col] = df[col].apply(lambda x: x[0] if len(x) > 0 else np.nan)
-    
-    # Ensure datetime index
+
+    #Preprocess
     df.index = pd.to_datetime(df.index)
-    
-    # Handle potential missing values
     df = df.fillna(method='ffill').fillna(method='bfill')
-    
-    # Separate features and target variable
     y = df["demand"]  # Endogenous variable
     X = df.drop(columns=["demand"])  # Exogenous variables
-    
-    # Train-test split (70:30)
+
     train_size = int(0.7 * len(df))
     y_train, y_test = y[:train_size], y[train_size:]
     X_train, X_test = X[:train_size], X[train_size:]
     
     try:
-        # Define and train the SARIMAX model
         model = SARIMAX(
             y_train, 
             exog=X_train, 
@@ -66,53 +56,32 @@ def demand_forecasting(part_data, part_id, forecast_steps=5):
             seasonal_order=(2, 1, 2, 6)  # Seasonal ARIMA order (P,D,Q,m)
         )
         results = model.fit(disp=False)
-        
-        # Print model summary
-        print(results.summary())
+
         
         # Forecast
         forecast = results.get_forecast(steps=len(y_test), exog=X_test)
-        
-        # Predicted values
         y_pred = forecast.predicted_mean
-        
-        # Calculate MAPE
         mape_score = mean_absolute_percentage_error(y_test, y_pred) * 100
-        print(f"\nModel MAPE: {mape_score:.2f}%")
-        
-        # Create the plot with dynamic scaling
         plt.figure(figsize=(15, 8))
         
         # Calculate dynamic y-axis limits
         y_min = min(y_test.min(), y_pred.min())
         y_max = max(y_test.max(), y_pred.max())
-        y_padding = (y_max - y_min) * 0.1  # Add 10% padding for better visualization
-        
-        # Set the limits for the y-axis
+        y_padding = (y_max - y_min) * 0.1
+
+        # Plot data
         plt.ylim(y_min - y_padding, y_max + y_padding)
-        
-        # Plot training data
         plt.plot(y_train.index, y_train, label="Training Data", color="blue", alpha=0.7)
-        
-        # Plot actual test data
         plt.plot(y_test.index, y_test, label="Actual Demand", color="black", linewidth=2)
-        
-        # Plot forecasted demand
         plt.plot(y_test.index, y_pred, label="Forecasted Demand", color="red", linestyle="--", linewidth=2)
-        
         plt.title(f"Demand Forecasting for Part ID: {part_id}")
         plt.xlabel("Timestamp")
         plt.ylabel("Demand")
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.7)
-        
-        # Rotate x-axis labels for better readability
         plt.xticks(rotation=45)
-        
-        # Adjust layout to prevent cutting off labels
         plt.tight_layout()
-        
-        # Return plot for further use or display
+
         return plt, mape_score
     
     except Exception as e:
@@ -158,10 +127,7 @@ def analyze_mape_scores(agg_mape):
         print("No valid MAPE scores found.")
         return None
     
-    # Extract MAPE values
     mape_values = list(valid_mape.values())
-    
-    # Calculate statistics
     mean_mape = np.mean(mape_values)
     max_mape = np.max(mape_values)
     min_mape = np.min(mape_values)
@@ -177,12 +143,7 @@ def analyze_mape_scores(agg_mape):
         "Valid Parts": len(valid_mape),
         "Invalid Parts": len(agg_mape) - len(valid_mape),
     }
-    
-    # Print the summary
-    print("\nMAPE Score Analysis:")
-    for key, value in summary.items():
-        print(f"{key}: {value}")
-    
+
     return summary
 
 def split_list_columns(df):
@@ -195,20 +156,16 @@ def split_list_columns(df):
     Returns:
         pd.DataFrame: A dataframe with list columns split into separate columns.
     """
-    result_df = df.copy()  # Start with a copy of the original dataframe
+    result_df = df.copy()
 
-    # Iterate through each column
     for column in df.columns:
-        # Ensure that 'demand' column is not mistakenly split
         if column == 'demand':
-            continue  # Skip splitting for 'demand' column
-        # Check if the first value in the column is a list (to identify list columns)
+            continue
+
         if isinstance(df[column].iloc[0], list):
-            # Create new columns for each element in the list
-            max_len = max(len(row) for row in df[column])  # Find the max list length
+            max_len = max(len(row) for row in df[column])
             for i in range(max_len):
                 result_df[f"{column}_{i + 1}"] = df[column].apply(lambda x: x[i] if i < len(x) else None)
-            # Drop the original column
             result_df.drop(columns=[column], inplace=True)
     
     return result_df
@@ -224,24 +181,20 @@ def aggregated_demand_forecasting(part_data, part_id):
     Returns:
         matplotlib.pyplot object, MAPE score (float)
     """
+    # Preprocess
     part_df = part_data.copy()
     part_df = split_list_columns(part_df)
     part_df.index = pd.to_datetime(part_df.index)
-    
-    # Handle potential missing values
     part_df = part_df.fillna(method='ffill').fillna(method='bfill')
     
-    # Separate features and target variable
     y = part_df["demand"]  # Endogenous variable
     X = part_df.drop(columns=["demand"])  # Exogenous variables
     
-    # Train-test split (70:30)
     train_size = int(0.7 * len(part_df))
     y_train, y_test = y[:train_size], y[train_size:]
     X_train, X_test = X[:train_size], X[train_size:]
     
     try:
-        # Define and train the SARIMAX model
         model = SARIMAX(
             y_train, 
             exog=X_train, 
@@ -250,37 +203,21 @@ def aggregated_demand_forecasting(part_data, part_id):
         )
         results = model.fit(disp=False)
         
-        # Print model summary
-        print(results.summary())
-        
         # Forecast
         forecast = results.get_forecast(steps=len(y_test), exog=X_test)
-        
-        # Predicted values
         y_pred = forecast.predicted_mean
-        
-        # Calculate MAPE
+
         mape_score = mean_absolute_percentage_error(y_test, y_pred) * 100
-        print(f"\nModel MAPE: {mape_score:.2f}%")
         
-        # Create the plot with dynamic scaling
+        # Plot
         plt.figure(figsize=(15, 8))
-        
-        # Calculate dynamic y-axis limits
         y_min = min(y_test.min(), y_pred.min(), y_train.min())
         y_max = max(y_test.max(), y_pred.max(), y_train.max())
-        y_padding = (y_max - y_min) * 0.1  # Add 10% padding for better visualization
-        
-        # Set the limits for the y-axis
+        y_padding = (y_max - y_min) * 0.1
         plt.ylim(y_min - y_padding, y_max + y_padding)
-        
-        # Plot training data
         plt.plot(y_train.index, y_train, label="Training Data", color="blue", alpha=0.7)
         
-        # Plot actual test data
         plt.plot(y_test.index, y_test, label="Actual Demand", color="black", linewidth=2)
-        
-        # Plot forecasted demand
         plt.plot(y_test.index, y_pred, label="Forecasted Demand", color="red", linestyle="--", linewidth=2)
         
         plt.title(f"Aggregated Demand Forecasting for Part ID: {part_id}")
@@ -288,14 +225,9 @@ def aggregated_demand_forecasting(part_data, part_id):
         plt.ylabel("Demand")
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.7)
-        
-        # Rotate x-axis labels for better readability
         plt.xticks(rotation=45)
-        
-        # Adjust layout to prevent cutting off labels
         plt.tight_layout()
-        
-        # Return plot for further use or display
+
         return plt, mape_score
     
     except Exception as e:
@@ -309,18 +241,10 @@ def final_mape_aggregate(part_id_list:list,parser:object):
         print(f"\nProcessing Part ID: {part_id}")
         
         try:
-            # Retrieve part data
             part_data = parser.aggregate_part_features(part_id)
-            
-            # Run demand forecasting for the part and capture the plot
             forecasting_plot,mape_score = aggregated_demand_forecasting(part_data, part_id)
-            
-            # Extract MAPE score from the printed result in `aggregated_demand_forecasting`
-            # Ensure that the function returns MAPE as a variable too, if needed
-            # mape_score = forecasting_plot  # Assuming it returns a MAPE score as part of the result
-            
-            # Add MAPE score to the dictionary
             agg_mape[part_id] = mape_score
+            
         except Exception as e:
             print(f"Error processing Part ID {part_id}: {str(e)}")
             agg_mape[part_id] = "Error"

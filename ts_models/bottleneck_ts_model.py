@@ -10,7 +10,7 @@ class POForecast:
             series = self.df[col]
             
             try:
-                model = ARIMA(series, order=(5, 1, 0))  # Example: ARIMA(5, 1, 0)
+                model = ARIMA(series, order=(5, 1, 0))
                 fitted_model = model.fit()
                 forecast = fitted_model.forecast(steps=forecast_steps)
                 forecasts[col] = forecast.tolist()

@@ -30,25 +30,20 @@ class XGBoostForecaster:
         df = pd.DataFrame(index=series.index)
         df['y'] = series
 
-        # Ensure the index is a DatetimeIndex
         df.index = pd.to_datetime(df.index)
         df.sort_index(inplace=True)
 
-        # Add lag features
         for lag in range(1, lags + 1):
             df[f'lag_{lag}'] = series.shift(lag)
 
-        # Add date features
         df['month'] = df.index.month
         df['quarter'] = df.index.quarter
         df['year'] = df.index.year
 
-        # Add rolling statistics
         for window in [3, 6]:
             df[f'rolling_mean_{window}'] = series.rolling(window=window).mean()
             df[f'rolling_std_{window}'] = series.rolling(window=window).std()
 
-        # Drop rows with NaN values
         df = df.dropna()
         return df
     
@@ -77,31 +72,25 @@ class XGBoostForecaster:
                 'min_child_weight': 1
             }
             
-        # Create features for train and test sets
         train_df = self.create_features(train_series)
         test_df = self.create_features(pd.concat([train_series, test_series]))
         test_df = test_df.iloc[len(train_df):]
         
-        # Prepare data
         X_train, y_train = self.prepare_xy(train_df)
         X_test, y_test = self.prepare_xy(test_df)
         
-        # Scale features
         X_train = self.scaler.fit_transform(X_train)
         X_test = self.scaler.transform(X_test)
         
-        # Train model
         model = xgb.XGBRegressor(**params)
         model.fit(X_train, y_train)
         
-        # Make predictions
         predictions = model.predict(X_test)
         mape = self.calculate_mape(y_test, predictions)
         
-        # Calculate AIC and BIC
         residuals = y_test - predictions
         n = len(y_test)
-        k = model.get_params()['n_estimators'] * (model.get_params()['max_depth'] + 1)  # Approximate number of parameters
+        k = model.get_params()['n_estimators'] * (model.get_params()['max_depth'] + 1)
         sigma = np.std(residuals)
         log_likelihood = -n/2 * np.log(2 * np.pi * sigma**2) - (np.sum(residuals**2)) / (2 * sigma**2)
         aic = 2 * k - 2 * log_likelihood
@@ -129,41 +118,33 @@ class XGBoostForecaster:
         bics = {}
         
         for horizon in forecast_horizons:
-            # Initialize array for storing predictions
             horizon_forecast = np.zeros(len(test_series) - horizon + 1)
             
             for i in range(len(horizon_forecast)):
-                # Create features using all available data up to current point
                 history = pd.concat([train_series, test_series.iloc[:i]])
                 features_df = self.create_features(history)
                 
-                # Prepare training data
                 X, y = self.prepare_xy(features_df)
                 X = self.scaler.fit_transform(X)
                 
-                # Train model
                 model = xgb.XGBRegressor(**params)
                 model.fit(X, y)
                 
-                # Make multi-step prediction
                 last_features = features_df.iloc[-1:]
                 current_pred = last_features.copy()
                 
                 for step in range(horizon):
-                    # Update features for next prediction
                     X_next = self.scaler.transform(current_pred.drop('y', axis=1))
                     pred = model.predict(X_next)[0]
                     
                     if step == horizon - 1:
                         horizon_forecast[i] = pred
-                    
-                    # Update current prediction DataFrame for next step
+
                     current_pred['y'] = pred
                     for lag in range(6, 0, -1):
                         if f'lag_{lag}' in current_pred.columns:
                             current_pred[f'lag_{lag}'] = current_pred[f'lag_{lag-1}'] if lag > 1 else pred
                     
-                    # Update rolling statistics
                     for window in [3, 6]:
                         current_pred[f'rolling_mean_{window}'] = pred
                         current_pred[f'rolling_std_{window}'] = 0
@@ -172,10 +153,9 @@ class XGBoostForecaster:
             actual = test_series.iloc[horizon-1:].values
             mapes[horizon] = self.calculate_mape(actual, horizon_forecast)
             
-            # Calculate AIC and BIC for this horizon
             residuals = actual - horizon_forecast
             n = len(actual)
-            k = model.get_params()['n_estimators'] * (model.get_params()['max_depth'] + 1)  # Approximate number of parameters
+            k = model.get_params()['n_estimators'] * (model.get_params()['max_depth'] + 1) 
             sigma = np.std(residuals)
             log_likelihood = -n/2 * np.log(2 * np.pi * sigma**2) - (np.sum(residuals**2)) / (2 * sigma**2)
             aic = 2 * k - 2 * log_likelihood
@@ -183,10 +163,6 @@ class XGBoostForecaster:
             aics[horizon] = aic
             bics[horizon] = bic
             
-        # Output AIC and BIC for multi-step forecasts
-        # st.write("Multi-Step Forecast - AIC and BIC for each horizon:")
-        # for horizon in forecast_horizons:
-        #     st.write(f"Horizon {horizon} - AIC: {aics[horizon]:.2f}, BIC: {bics[horizon]:.2f}")
         
         return forecasts, mapes
     
