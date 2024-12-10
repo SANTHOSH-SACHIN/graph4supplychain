@@ -11,8 +11,8 @@ from typing import Dict, List, Tuple
 import streamlit as st 
 
 def sarima_demand_forecast(train_demand, test_demand, 
-                                         order=(1,1,1), 
-                                         seasonal_order=(1,1,1,4), 
+                                         order=(2,1,2), 
+                                         seasonal_order=(2,1,2,6), 
                                          verbose=True):
     """
     Perform single-step demand forecasting using SARIMA model with enhanced visualization.
