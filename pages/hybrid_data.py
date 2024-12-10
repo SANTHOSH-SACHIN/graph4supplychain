@@ -92,16 +92,7 @@ if model_choice == "Non-Aggregated Columns":
     node_id = st.selectbox("Select part id", labels_df.columns)
     if st.button("Run Forecasting"):
         viz, mape = hm.demand_forecasting(part_data, node_id)
-        # final_agg = agg_mape
-        # Display results
         st.write("Aggregated MAPE Scores:")
-        # st.write(mape)
-
-        # for key, values in final_agg.items():
-        #     if node_id == key:
-        #         plot = values[0]
-        #         mape = values[1]
-
         st.pyplot(viz)
         st.write(mape)
 

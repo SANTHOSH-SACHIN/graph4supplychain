@@ -3,14 +3,8 @@ import os
 from PIL import Image
 
 def create_app():
-    # Set page config
-    st.set_page_config(
-        page_title="Complexity Analysis",
-        layout="wide"
-    )
-
     # Title
-    st.title("Complexity Analysis")
+    st.subheader("Complexity Analysis")
 
     # Create columns for dropdowns
     col1, col2 = st.columns(2)
@@ -56,5 +50,5 @@ def create_app():
     else:
         st.info("Please select both a model and a dataset to view the analysis.")
 
-if __name__ == "__main__":
-    create_app()
+
+create_app()

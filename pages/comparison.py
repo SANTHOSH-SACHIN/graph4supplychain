@@ -388,10 +388,9 @@ class ComparisonPage:
 
 
 def main():
-    st.set_page_config(page_title="Model Comparison", layout="wide")
-
+    st.subheader("Model Comparison")
     comparison_page = ComparisonPage()
     comparison_page.display()
 
-if __name__ == "__main__":
-    main()
+
+main()
