@@ -184,9 +184,9 @@ class XGBoostForecaster:
             bics[horizon] = bic
             
         # Output AIC and BIC for multi-step forecasts
-        st.write("Multi-Step Forecast - AIC and BIC for each horizon:")
-        for horizon in forecast_horizons:
-            st.write(f"Horizon {horizon} - AIC: {aics[horizon]:.2f}, BIC: {bics[horizon]:.2f}")
+        # st.write("Multi-Step Forecast - AIC and BIC for each horizon:")
+        # for horizon in forecast_horizons:
+        #     st.write(f"Horizon {horizon} - AIC: {aics[horizon]:.2f}, BIC: {bics[horizon]:.2f}")
         
         return forecasts, mapes
     

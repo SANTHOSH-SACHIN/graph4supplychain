@@ -229,9 +229,7 @@ class MultiStepARIMA:
                 try:
                     model = ARIMA(train_data, order=order)
                     results = model.fit()
-                    # AIC BIC
-                    st.write(f"AIC: {results.aic}")
-                    st.write(f"BIC: {results.bic}")
+
                     # Draw a line 
                     st.write ("-"*50)
                     # Forecast 'horizon' steps ahead

@@ -204,8 +204,8 @@ def forecast_node_multistep_sarima(train_series: pd.Series, test_series: pd.Seri
                                 order=order, 
                                 seasonal_order=seasonal_order)
                 results = model.fit(disp=False)
-                st.write(f"Model AIC: {results.aic}")
-                st.write(f"Model BIC: {results.bic}")
+                # st.write(f"Model AIC: {results.aic}")
+                # st.write(f"Model BIC: {results.bic}")
                 # Forecast 'horizon' steps ahead
                 forecast = results.get_forecast(steps=horizon)
                 forecast_mean = forecast.predicted_mean
