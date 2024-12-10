@@ -126,15 +126,10 @@ class SpatialModels:
             st.write("Markdown file not found. Please ensure the file exists.")
 
 def main():
-    st.set_page_config(
-        page_title="Spatial GNN Models",
-        page_icon="📊",
-        layout="wide"
-    )
-
+    st.subheader("Spatial GNN Models")
     # Initialize the models and display the page content
     spatial_models = SpatialModels()
     spatial_models.display()
 
-if __name__ == "__main__":
-    main()
+
+main()

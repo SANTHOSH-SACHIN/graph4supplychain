@@ -290,15 +290,10 @@ class SpatioTemporalModels:
 
 
 def main():
-    st.set_page_config(
-        page_title="Spatio-Temporal GNN Models",
-        page_icon="📊",
-        layout="wide"
-    )
-
+    st.subheader("Spatio-Temporal GNN Models")
     # Initialize the models and display the page content
     st_models = SpatioTemporalModels()
     st_models.display()
 
-if __name__ == "__main__":
-    main()
+
+main()
