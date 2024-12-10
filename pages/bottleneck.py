@@ -38,10 +38,8 @@ def visualize_bottleneck_nodes(nodes, parser, threshold):
             'Facility Type': 'LAM' if node in parser.lam_facility else 'External'
         })
     
-    # Create DataFrame
+
     df_bottlenecks = pd.DataFrame(bottleneck_data)
-    
-    # Streamlit Visualization
     st.subheader("🚧 Bottleneck Nodes Analysis")
     
     # Metrics Display
@@ -52,7 +50,6 @@ def visualize_bottleneck_nodes(nodes, parser, threshold):
         st.metric(label="Bottleneck Percentage", 
                   value=f"{len(nodes) / len(parser.facility_supply) * 100:.2f}%")
     
-    # Interactive Table
     st.dataframe(df_bottlenecks, 
                  column_config={
                      "Node ID": st.column_config.TextColumn("Node ID"),
@@ -172,11 +169,11 @@ if st_button:
 
     forecaster = POForecast(po_df)
     dict_forecast = forecaster.function(forecast_steps)
-    # st.write(dict_forecast)
+
     G = generate_new_graph(G, dict_forecast, parser.id_map['PRODUCT_OFFERING'])
     temporal_graphs = {1: ('placeholder', G)}
     demand_parts = test_single_step_regression(model, temporal_graphs, torch.nn.MSELoss(), label='FACILITY')
     nodes = get_bottleneck_nodes(demand_parts, parser.facility_supply, parser.id_map['FACILITY'], threshold)
-    # st.write(nodes)
+
     visualize_bottleneck_nodes(nodes, parser, threshold)
     st.sidebar.success('Bottleneck detection completed successfully')

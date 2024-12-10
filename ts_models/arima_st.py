@@ -29,7 +29,6 @@ class SingleStepARIMA:
         train_size = int(n * train_size)
         return df.iloc[:train_size], df.iloc[train_size:]
     
-    # ... Other methods identical to the existing ones for single-step ARIMA ...
     def plot_forecast_comparison(self, 
                                 train_series: pd.Series,
                                 test_series: pd.Series,
@@ -41,8 +40,6 @@ class SingleStepARIMA:
                                 save_path: str = None):
         """Plot actual vs forecasted values"""
         plt.figure(figsize=(12, 6))
-        
-        # Plotting code...
         
         if save_path:
             plt.savefig(f'{save_path}/{node_id}_{metric}_sarima_forecast.png')
@@ -131,8 +128,6 @@ class SingleStepARIMA:
         mape = self.calculate_mape(test_series.values, forecast.values)
         return forecast, mape
 
-    # ... Rest of the single-step forecasting methods ...
-
 class MultiStepARIMA:
     def __init__(self, metadata_path: str):
         """Initialize the analyzer with metadata"""
@@ -151,8 +146,6 @@ class MultiStepARIMA:
         n = len(df)
         train_size = int(n * train_size)
         return df.iloc[:train_size], df.iloc[train_size:]
-    
-    # ... Other methods identical to the existing ones for multi-step ARIMA ...
 
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
         """Load and combine all timestamp data files into a single DataFrame"""
@@ -210,44 +203,32 @@ class MultiStepARIMA:
         - forecasts: List of forecasted values for each horizon
         - mapes: Dictionary of MAPE values for each forecast horizon
         """
-        # Prepare the complete time series for forecasting
         full_series = pd.concat([train_series, test_series])
-        
         forecasts = []
         mapes = {}
         
         for horizon in forecast_horizons:
-            # Initialize forecast array for this horizon
             horizon_forecast = []
             
             # Perform rolling forecast
             for i in range(len(test_series) - horizon + 1):
-                # Prepare training data up to current point
                 train_data = full_series.iloc[:len(train_series) + i]
-                
-                # Fit ARIMA model
                 try:
                     model = ARIMA(train_data, order=order)
                     results = model.fit()
-
-                    # Draw a line 
                     st.write ("-"*50)
+
                     # Forecast 'horizon' steps ahead
                     forecast = results.forecast(steps=horizon)
-                    
-                    # Take the last value of the forecast (n-step ahead prediction)
                     horizon_forecast.append(forecast.iloc[-1])
                 
                 except Exception as e:
                     print(f"Error in forecasting for horizon {horizon}: {e}")
-                    # If forecasting fails, use last known value or NaN
                     horizon_forecast.append(train_data.iloc[-1])
             
             # Convert to numpy array
             horizon_forecast = np.array(horizon_forecast)
             forecasts.append(horizon_forecast)
-            
-            # Calculate MAPE for this horizon
             actual = test_series.iloc[horizon-1:].values
             mapes[horizon] = self.calculate_mape(actual, horizon_forecast)
         
@@ -268,20 +249,16 @@ class MultiStepARIMA:
         """
         plt.figure(figsize=(15, 8))
         
-        # Plot training data
+        # Plot
         plt.plot(train_series.index, train_series.values, 
                 label='Training Data', color='blue', marker='o', linestyle='-', linewidth=2)
-        
-        # Plot test data
+
         plt.plot(test_series.index, test_series.values, 
                 label='Actual Test Data', color='green', marker='o', linestyle='-', linewidth=2)
-        
-        # Plot forecasts for each horizon
+
         colors = plt.cm.viridis(np.linspace(0, 1, len(forecast_horizons)))
         for forecast, horizon, color in zip(forecasts, forecast_horizons, colors):
-            # Adjust index for forecast plot
             forecast_index = test_series.index[horizon-1:len(forecast)+horizon-1]
-            
             plt.plot(forecast_index, forecast, 
                     label=f'{horizon}-Step Forecast (MAPE: {mapes[horizon]:.2f}%)',
                     marker='s', linestyle='--', linewidth=2, color=color)
@@ -331,6 +308,3 @@ class MultiStepARIMA:
                 plt.show()
             
             plt.close()
-            
-
-    # ... Rest of the multi-step forecasting methods ...

@@ -28,35 +28,25 @@ def calculate_prophet_aic_bic(model, train_df):
     --------
     tuple: (AIC score, BIC score)
     """
-    # Number of observations
     n = len(train_df)
     
-    # Calculate log-likelihood 
-    # For Prophet, we'll use the residuals to approximate log-likelihood
     forecast = model.predict(train_df)
     residuals = train_df['y'].values - forecast['yhat'].values
     
-    # Estimate variance of residuals
+
     sigma_squared = np.var(residuals)
     
-    # Number of parameters 
-    # This is an approximation as Prophet has multiple components
     num_params = (
-        1  # Baseline trend
-        + (1 if model.yearly_seasonality else 0)  # Yearly seasonality 
-        + (1 if model.weekly_seasonality else 0)  # Weekly seasonality
-        + (1 if model.daily_seasonality else 0)   # Daily seasonality
+        1  
+        + (1 if model.yearly_seasonality else 0)   
+        + (1 if model.weekly_seasonality else 0) 
+        + (1 if model.daily_seasonality else 0)   
         + 1  # Changepoint prior scale
         + 1  # Seasonality prior scale
     )
     
-    # AIC Calculation
-    # AIC = 2k - 2ln(L)
-    # k is number of parameters, L is maximum likelihood
     aic = 2 * num_params + n * np.log(sigma_squared)
     
-    # BIC Calculation
-    # BIC = k * ln(n) - 2ln(L)
     bic = num_params * np.log(n) + n * np.log(sigma_squared)
     
     return aic, bic
@@ -95,23 +85,17 @@ class SingleStepProphet:
                 'seasonality_prior_scale': 10
             }
         
-        # Prepare data in Prophet format
         train_df = self.prepare_prophet_data(train_series)
         
-        # Initialize and fit Prophet model
         model = Prophet(**params)
         model.fit(train_df)
         
-        # Calculate AIC and BIC
         aic, bic = calculate_prophet_aic_bic(model, train_df)
-        
-        # Write results using Streamlit
         st.write("### AIC and BIC Scores")
         st.write(f"AIC Score: {aic:.2f}")
         st.write(f"BIC Score: {bic:.2f}")
 
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
-        """Load and combine all timestamp data files into a single DataFrame"""
         all_data = []
         
         for file_path in timestamp_files:
@@ -174,24 +158,20 @@ class SingleStepProphet:
                 'weekly_seasonality': True,
                 'daily_seasonality': False,
                 'seasonality_mode': 'multiplicative',
-                'changepoint_prior_scale': 0.05,  # Flexibility of trend
-                'seasonality_prior_scale': 10     # Flexibility of seasonality
+                'changepoint_prior_scale': 0.05, 
+                'seasonality_prior_scale': 10     
             }
         
-        # Prepare data in Prophet format
         train_df = self.prepare_prophet_data(train_series)
         
-        # Initialize and fit Prophet model
         model = Prophet(**params)
         model.fit(train_df)
         
-        # Create future dataframe for prediction
         future = pd.DataFrame({'ds': test_series.index})
         forecast = model.predict(future)
         
         predictions = pd.Series(forecast['yhat'].values, index=test_series.index)
         
-        # Calculate MAPE
         mape = self.calculate_mape(test_series.values, predictions.values)
         self.calculate_aic_bic(train_series)
 
@@ -296,24 +276,20 @@ class MultiStepProphet:
         st.write("### Multi-Step AIC and BIC Scores")
         
         for horizon in forecast_horizons:
-            # Prepare data in Prophet format
+        
             train_df = self.prepare_prophet_data(train_series)
             
-            # Train model
             model = Prophet(**params)
             model.fit(train_df)
             
-            # Calculate AIC and BIC
             aic, bic = calculate_prophet_aic_bic(model, train_df)
             
-            # Write results for each horizon
             st.write(f"Forecast Horizon {horizon}:")
             st.write(f"AIC Score: {aic:.2f}")
             st.write(f"BIC Score: {bic:.2f}")
 
 
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
-        """Load and combine all timestamp data files into a single DataFrame"""
         all_data = []
         
         for file_path in timestamp_files:
@@ -384,19 +360,15 @@ class MultiStepProphet:
             horizon_forecast = np.zeros(len(test_series) - horizon + 1)
             
             for i in range(len(horizon_forecast)):
-                # Prepare data up to current point
                 history = pd.concat([train_series, test_series.iloc[:i]])
                 train_df = self.prepare_prophet_data(history)
                 
-                # Train model
                 model = Prophet(**params)
                 model.fit(train_df)
                 
-                # Create future dataframe for prediction
                 future = model.make_future_dataframe(periods=horizon, freq='M')
                 forecast = model.predict(future)
                 
-                # Get prediction for the horizon
                 horizon_forecast[i] = forecast.iloc[-1]['yhat']
             
             forecasts.append(horizon_forecast)
@@ -452,7 +424,6 @@ class MultiStepProphet:
         metrics = ['cost', 'demand']
         nodes = list(mape_results.keys())
         
-        # Create separate heatmaps for each forecast horizon
         for horizon in forecast_horizons:
             mape_matrix = np.zeros((len(nodes), len(metrics)))
             for i, node in enumerate(nodes):

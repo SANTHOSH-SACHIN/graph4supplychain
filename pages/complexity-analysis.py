@@ -3,10 +3,7 @@ import os
 from PIL import Image
 
 def create_app():
-    # Title
     st.subheader("Complexity Analysis")
-
-    # Create columns for dropdowns
     col1, col2 = st.columns(2)
     
     with col1:

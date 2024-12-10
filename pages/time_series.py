@@ -12,9 +12,6 @@ import os
 import numpy as np
 from ts_models.sarima_updated import sarima_demand_forecast,forecast_node_multistep_sarima
 
-
-#utils
-
 class StreamlitTimeSeriesAnalyzer:
     def __init__(
         self, metadata_path: str = None, server_url: str = None, headers: Dict = None
@@ -397,21 +394,6 @@ if node_id:
 
                 st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
 
-        # Plot results
-        # fig = plot_single_step_forecast(
-        #     train_demand,
-        #     test_demand,
-        #     demand_forecast,
-        #     model_type,
-        #     node_id,
-        #     demand_mape,
-        #     lookback,
-        # )
-        # st.pyplot(fig)
-        # plt.close()
-
-        # st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-
     elif analysis_type == "Multi-Step":
         st.subheader(f"Multi-Step {model_type} Forecasting")
         if model_type == "CNN-LSTM":
@@ -472,8 +454,6 @@ if node_id:
                             st.metric(f"{horizon}-Step Forecast MAPE", f"{mape:.2f}%")
                     
                 elif model_type == "Prophet":
-                    # forecasts, mapes = analyzer.models['multi_step_prophet'].forecast_node_multistep(
-                    #     train_demand, test_demand, forecast_horizons)
                     st.warning("No implemenation for multi-step prophet")
                 else:  # XGBoost
                     with st.spinner("Training XGBoost model..."):
