@@ -1,17 +1,43 @@
-# Welcome to MkDocs
+# Graph4SupplyChain
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Welcome to Graph4SupplyChain documentation! This comprehensive platform combines the power of Graph Neural Networks (GNN) and advanced time series forecasting techniques to revolutionize supply chain analytics.
 
-## Commands
+## Features
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+- **Graph-based Supply Chain Analysis**: Leverage GNN models to understand complex supply chain relationships and dependencies
+- **Advanced Time Series Forecasting**: Multiple forecasting models including:
+  - ARIMA
+  - Prophet
+  - XGBoost
+  - SARIMA
+- **Interactive Visualization**: Dynamic dashboards for supply chain insights
+- **Docker Support**: Easy deployment and scalability
+- **Modular Architecture**: Extensible design for custom implementations
 
-## Project layout
+## Quick Links
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+- [Installation Guide](getting-started/installation.md): Get started with setup instructions
+- [Quick Start](getting-started/quickstart.md): Jump right in with basic examples
+- [User Guide](user-guide/overview.md): Detailed usage instructions
+- [API Reference](api/gnn-models.md): Technical documentation
+- [Examples](examples/basic-usage.md): Real-world use cases
+
+## Project Overview
+
+Graph4SupplyChain is designed to help organizations:
+
+- Predict demand and supply patterns
+- Identify potential bottlenecks and risks
+- Optimize inventory management
+- Analyze supply chain relationships
+- Make data-driven decisions
+
+## Getting Help
+
+- Check our [User Guide](user-guide/overview.md) for detailed documentation
+- See [Examples](examples/basic-usage.md) for practical use cases
+- Contribute or report issues on our GitHub repository
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

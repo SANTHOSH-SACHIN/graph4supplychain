@@ -1,31 +1,58 @@
-site_name: Forecasting App Documentation
-theme: 
+site_name: Graph4SupplyChain
+site_description: A comprehensive supply chain analytics platform with graph neural networks and time series forecasting
+theme:
   name: material
   features:
     - navigation.tabs
-    - navigation.expand
     - navigation.sections
     - navigation.top
-    - toc.integrate
-    - search.suggest
     - search.highlight
-    - content.tabs.link
-    - content.code.annotation
-    - content.code.copy
-  language: en
   palette:
     - scheme: default
-      toggle: 
-        icon: material/toggle-switch-off-outline
-        name: Switch to Dark Mode
-      primary: teal
-      accent: purple
-    - scheme: slate
+      primary: indigo
+      accent: indigo
       toggle:
-        icon: material/toggle-switch
-        name: Switch to Light Mode
-      primary: teal
-      accent: lime
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+  - User Guide:
+      - Overview: user-guide/overview.md
+      - Data Format: user-guide/data-format.md
+      - Graph Analytics: user-guide/graph-analytics.md
+      - Time Series Forecasting: user-guide/time-series.md
+      - Visualization: user-guide/visualization.md
+  - API Reference:
+      - GNN Models: api/gnn-models.md
+      - Time Series Models: api/time-series-models.md
+      - Utilities: api/utils.md
+  - Examples:
+      - Basic Usage: examples/basic-usage.md
+      - Advanced Features: examples/advanced-features.md
+  - Contributing: contributing.md
 
 extra:
   social:

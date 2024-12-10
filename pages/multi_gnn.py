@@ -143,9 +143,7 @@ with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
         help="Number of hidden channels in the graph neural network",
     )
 
-    device = st.radio(
-        "Select Data Source", ["cpu", "cuda"]
-    )
+    device = "cpu"
 
     num_epochs = st.number_input(
         "Number of Epochs",

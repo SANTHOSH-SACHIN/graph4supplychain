@@ -228,7 +228,7 @@ def train_multistep_regression(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cuda",
+    device="cpu",
     patience=5,
 ):
     st.subheader("Training Progress . . .")
@@ -369,7 +369,7 @@ def train_multistep_classification(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cuda",
+    device="cpu",
     patience=5,
 ):
     st.subheader("Multistep Classification Training Progress")
@@ -519,7 +519,7 @@ def train_classification(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cuda",
+    device="cpu",
     patience=5,
 ):
     st.subheader("Training Progress . . .")
@@ -626,7 +626,7 @@ def train_classification(
 #     loss_fn,
 #     temporal_graphs,
 #     label="PARTS",
-#     device="cuda",
+#     device="cpu",
 #     patience=5,
 # ):
 #     st.subheader("Training Progress . . .")
@@ -734,7 +734,7 @@ def train_classification(
 #     return model, best_test_r2, best_test_mae**0.5, epoch_losses, epoch_r2_scores
 
 
-# def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+# def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
 #     model.eval()
 #     test_true_all = []
 #     test_pred_all = []
@@ -768,7 +768,7 @@ def train_regression(
     loss_fn,
     temporal_graphs,
     label="PARTS",
-    device="cuda",
+    device="cpu",
     patience=5,
 ):
     st.subheader("Training Progress . . .")
@@ -890,7 +890,7 @@ def train_regression(
     
     return model, best_test_r2, best_test_adjusted_r2, best_test_mae**0.5, epoch_losses, epoch_r2_scores, epoch_adjusted_r2_scores
 
-def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
     model.eval()
     test_true_all = []
     test_pred_all = []
@@ -921,7 +921,7 @@ def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", 
 
     return {"R2": r2 ,"Adjusted R2" : adjusted_r2 , "MAE": mae, "Loss": total_loss / len(temporal_graphs), "Predictions":test_pred_all}
 
-# def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+# def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
 #     model.eval()
 #     test_true_all = []
 #     test_pred_all = []
@@ -963,7 +963,7 @@ def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", 
 
 
 
-def test_single_step_classification(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+def test_single_step_classification(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
     model.eval()
     test_true_all = []
     test_pred_all = []
@@ -990,7 +990,7 @@ def test_single_step_classification(model, temporal_graphs, loss_fn, label="PART
     return {"Accuracy": accuracy, "Loss": total_loss / len(temporal_graphs)}
 
 
-# def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+# def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
 #     model.eval()
 #     test_true_all = []
 #     test_pred_all = []
@@ -1017,7 +1017,7 @@ def test_single_step_classification(model, temporal_graphs, loss_fn, label="PART
 
 #     return {"R2": r2, "MAE": mae, "Loss": total_loss / len(temporal_graphs)}
 
-def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
     model.eval()
     test_true_all = []
     test_pred_all = []
@@ -1056,7 +1056,7 @@ def test_multistep_regression(model, temporal_graphs, loss_fn, label="PARTS", de
         "Loss": total_loss / len(temporal_graphs)
     }
     
-def test_multistep_classification(model, temporal_graphs, loss_fn, label="PARTS", device="cuda"):
+def test_multistep_classification(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
     model.eval()
     test_true_all = []
     test_pred_all = []

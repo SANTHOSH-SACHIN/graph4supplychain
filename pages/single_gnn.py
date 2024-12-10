@@ -146,9 +146,7 @@ with st.sidebar.expander("⚙️ Training Parameters", expanded=True):
     )
 
     # Device for training Radio Button
-    device = st.sidebar.radio(
-    "Select Data Source", ["cpu", "cuda"]
-    )
+    device = "cpu"
     task_forecast = st.sidebar.radio(
     "Select Task", ["df", "bd"]
     )
@@ -238,7 +236,7 @@ if metadata_file is not None:
                     )
 
                     # Move model to appropriate device
-                    # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                    # device = torch.device("cpu" if torch.cpu.is_available() else "cpu")
                     model = model.to(device)
 
                     # Configure optimizer and loss function
@@ -497,7 +495,7 @@ if metadata_file is not None:
                     )
 
                     # Move model to appropriate device
-                    # device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+                    # device = torch.device("cpu" if torch.cpu.is_available() else "cpu")
                     model = model.to(device)
 
                     # Configure optimizer and loss function
