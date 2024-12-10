@@ -235,6 +235,7 @@ if metadata_file is not None:
                 out_channels=G.num_classes,
                 G=G,
                 out_steps=out_steps,
+                max_number_parts=G.num_nodes
             ).to(device)
 
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)

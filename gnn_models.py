@@ -160,24 +160,39 @@ class GRUDecoder(torch.nn.Module):
 
 
 class MultistepDecoder(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, out_steps):
+    def __init__(self, in_channels, out_channels, out_steps, max_number_parts, hidden_gru=64):
         super().__init__()
 
         # Define the MLP layers
         hidden_layers = [128, 64, 32]
-        self.linear = MLP(in_channels, hidden_layers, out_channels * out_steps)
+
+        self.part_grus = nn.ModuleList(
+            [
+                nn.GRU(in_channels, hidden_gru, batch_first=True)
+                for _ in range(max_number_parts)
+            ]
+        )
+        self.part_mlps = nn.ModuleList(
+            [MLP(hidden_gru, hidden_layers, out_channels*out_steps) for _ in range(max_number_parts)]
+        )
         self.out_steps = out_steps
         self.out_channels = out_channels
 
     def forward(self, z_dict):
         z = z_dict["PARTS"]
-        logits = self.linear(z)
-        return logits.view(-1, self.out_channels, self.out_steps)
-
-
+        outputs=[]
+        for part_idx in range(len(z)):
+            part_embedding = z[part_idx]
+            part_gru, _ = self.part_grus[part_idx](part_embedding.unsqueeze(0))
+            part_output = self.part_mlps[part_idx](part_gru.squeeze())
+            outputs.append(part_output)
+        outputs = torch.stack(outputs)
+        if self.out_channels>1:
+                outputs = outputs.view(len(z), self.out_channels, self.out_steps)
+        return outputs
 
 class MultiStepModel(torch.nn.Module):
-    def __init__(self, hidden_channels, out_channels, out_steps, G=None):
+    def __init__(self, hidden_channels, out_channels, out_steps, max_number_parts, G=None):
         super().__init__()
         # Dynamically choose encoder based on user configuration
         self.encoder_type = st.session_state.get("encoder_type", "SAGEConv")
@@ -195,7 +210,7 @@ class MultiStepModel(torch.nn.Module):
             self.encoder = to_hetero(self.encoder, G.metadata(), aggr="mean")
 
         self.decoder = MultistepDecoder(
-            hidden_channels, out_channels, out_steps=out_steps
+            hidden_channels, out_channels, out_steps=out_steps, max_number_parts=max_number_parts
         )
 
     def forward(self, x_dict, edge_index_dict, edge_attr=None):
@@ -205,134 +220,6 @@ class MultiStepModel(torch.nn.Module):
             z_dict = self.encoder(x_dict, edge_index_dict, edge_attr)
         return self.decoder(z_dict)
 
-
-# def train_multistep_regression(
-#     num_epochs,
-#     model,
-#     optimizer,
-#     loss_fn,
-#     temporal_graphs,
-#     label="PARTS",
-#     device="cuda",
-#     patience=5,
-# ):
-#     st.subheader("Training Progress . . .")
-#     progress_bar = st.progress(0)
-#     status_text = st.empty()
-
-#     best_test_r2 = -float("inf")
-#     best_test_mae = float("inf")
-#     patience_counter = 0
-#     best_state = None
-#     epoch_losses = []
-#     epoch_r2_scores = []
-
-#     for epoch in range(num_epochs):
-#         epoch_train_loss = 0.0
-#         epoch_train_mae = 0.0
-#         train_true_all = []
-#         train_pred_all = []
-#         epoch_test_loss = 0.0
-#         epoch_test_mae = 0.0
-#         test_true_all = []
-#         test_pred_all = []
-#         graph_count = 0
-
-#         for row in temporal_graphs:
-#             G = temporal_graphs[row][1]
-#             graph_count += 1
-
-#             # Training phase
-#             model.train()
-#             optimizer.zero_grad()
-
-#             # Forward pass
-#             out = model(G.x_dict, G.edge_index_dict).squeeze(1)
-
-#             # Get training masks and compute loss
-#             train_mask = G[label]["train_mask"]
-#             train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
-
-
-#             # Backward pass
-#             train_loss.backward()
-#             optimizer.step()
-
-#             # Compute training metrics
-#             with torch.no_grad():
-#                 train_pred = out[train_mask].cpu().numpy()
-#                 train_true = G[label].y[train_mask].cpu().numpy()
-#                 train_mae = (
-#                     torch.abs(out[train_mask] - G[label].y[train_mask]).mean().item()
-#                 )
-
-#                 # Collect all predictions and true values
-#                 train_pred_all.append(train_pred)
-#                 train_true_all.append(train_true)
-#                 epoch_train_loss += train_loss.item()
-#                 epoch_train_mae += train_mae
-
-#             # Evaluation phase
-#             model.eval()
-#             with torch.no_grad():
-#                 test_mask = G[label]["test_mask"]
-#                 test_pred = out[test_mask].cpu().numpy()
-#                 test_true = G[label].y[test_mask].cpu().numpy()
-
-#                 test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
-#                 test_mae = (
-#                     torch.abs(out[test_mask] - G[label].y[test_mask]).mean().item()
-#                 )
-
-#                 # Collect all predictions and true values
-#                 test_pred_all.append(test_pred)
-#                 test_true_all.append(test_true)
-#                 epoch_test_loss += test_loss.item()
-#                 epoch_test_mae += test_mae
-
-#         # Aggregate all predictions and true values
-#         train_true_all = np.concatenate(train_true_all)
-#         train_pred_all = np.concatenate(train_pred_all)
-#         test_true_all = np.concatenate(test_true_all)
-#         test_pred_all = np.concatenate(test_pred_all)
-
-#         # Compute R² score over all data
-#         avg_train_r2 = r2_score(train_true_all, train_pred_all)
-#         avg_test_r2 = r2_score(test_true_all, test_pred_all)
-
-#         # Average losses and MAEs
-#         avg_train_loss = epoch_train_loss / graph_count
-#         avg_train_mae = epoch_train_mae / graph_count
-#         avg_test_loss = epoch_test_loss / graph_count
-#         avg_test_mae = epoch_test_mae / graph_count
-
-#         epoch_losses.append(avg_test_loss)
-#         epoch_r2_scores.append(avg_test_r2)
-
-#         # Check for improvement
-#         if avg_test_loss < best_test_mae:
-#             best_test_mae = avg_test_loss
-#             best_test_r2 = avg_test_r2
-#             best_state = model.state_dict().copy()
-#             patience_counter = 0
-#         else:
-#             patience_counter += 1
-
-#         # Early stopping
-#         if patience_counter >= patience:
-#             st.write(f"Early stopping triggered at epoch {epoch + 1}")
-#             break
-
-#         # Update progress bar
-#         progress_bar.progress((epoch + 1) / num_epochs)
-#         status_text.text(
-#             f"Epoch {epoch + 1}/{num_epochs} - Train Loss: {avg_train_loss**0.5:.4f}, Train R²: {avg_test_r2:.4f}"
-#         )
-
-#     # Load best model
-#     if best_state:
-#         model.load_state_dict(best_state)
-#     return model, best_test_r2, best_test_mae, epoch_losses, epoch_r2_scores
 
 def train_multistep_regression(
     num_epochs,
@@ -515,6 +402,7 @@ def train_multistep_classification(
             out = model(G.x_dict, G.edge_index_dict, G.edge_attr)
 
             # Get training masks and compute loss
+            # st.write(out.shape)
             train_mask = G[label]["train_mask"]
             train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
 
