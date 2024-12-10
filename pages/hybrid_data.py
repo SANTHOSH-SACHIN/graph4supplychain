@@ -92,9 +92,9 @@ if model_choice == "Non-Aggregated Columns":
     node_id = st.selectbox("Select part id", labels_df.columns)
     if st.button("Run Forecasting"):
         viz, mape = hm.demand_forecasting(part_data, node_id)
-        st.write("Aggregated MAPE Scores:")
+        st.metric("Aggregated MAPE Scores:", mape)
         st.pyplot(viz)
-        st.write(mape)
+        
 
 elif model_choice == "Aggregated Columns":
     aggregation_method = st.radio(
@@ -112,19 +112,7 @@ elif model_choice == "Aggregated Columns":
     for i in labels_df.columns:
         part_id_list.append(i)
 
-    # # final_agg = {}
-    # # node_id = st.selectbox("Select part id", labels_df.columns)
     if st.button("Run Forecasting"):
         viz, mape = hm.aggregated_demand_forecasting(part_data, node_id)
-        # final_agg = agg_mape
-        # Display results
-        st.write("Aggregated MAPE Scores:")
-        # st.write(mape)
-
-        # # for key, values in final_agg.items():
-        # #     if node_id == key:
-        # #         plot = values[0]
-        # #         mape = values[1]
-
+        st.metric("Aggregated MAPE Scores:", mape)
         st.pyplot(viz)
-        st.write(mape)
