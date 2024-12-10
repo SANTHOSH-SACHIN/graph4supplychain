@@ -36,23 +36,13 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Getting Started:
-      - Installation: getting-started/installation.md
-      - Quick Start: getting-started/quickstart.md
-  - User Guide:
-      - Overview: user-guide/overview.md
-      - Data Format: user-guide/data-format.md
-      - Graph Analytics: user-guide/graph-analytics.md
-      - Time Series Forecasting: user-guide/time-series.md
-      - Visualization: user-guide/visualization.md
-  - API Reference:
-      - GNN Models: api/gnn-models.md
-      - Time Series Models: api/time-series-models.md
-      - Utilities: api/utils.md
-  - Examples:
-      - Basic Usage: examples/basic-usage.md
-      - Advanced Features: examples/advanced-features.md
-  - Contributing: contributing.md
+  - Parser: Parser.md
+  - GNN Based Forecasting: SingleStepGNN.md
+  - Timeseries Forecasting: Timeseries.md
+  - Bottleneck: Bottleneck.md
+  - Sparsity: Sparsity.md
+  - HybridData: HybridModel.md
+  - TestPage: TestPage.md
 
 extra:
   social:
