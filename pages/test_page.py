@@ -144,12 +144,7 @@ if model_file:
                 else:
                     # General inference for other numeric metrics
                     st.metric(f"{metric_name.capitalize()}", f"{metric_value:.2f}")
-                    if metric_value < 0.5:
-                        st.warning(f"⚠️ {metric_name.capitalize()} indicates poor performance.")
-                    elif metric_value < 0.8:
-                        st.info(f"🔍 {metric_name.capitalize()} shows moderate performance.")
-                    else:
-                        st.success(f"✅ {metric_name.capitalize()} indicates excellent performance.")
+
 
             elif isinstance(metric_value, list):
                 # Inferences for list metrics (e.g., trends or progressions)
