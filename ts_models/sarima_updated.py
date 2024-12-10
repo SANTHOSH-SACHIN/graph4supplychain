@@ -63,13 +63,15 @@ def sarima_demand_forecast(train_demand, test_demand,
                         order=order, 
                         seasonal_order=seasonal_order)
         model_fit = model.fit(disp=False)
-        
+        st.write(f"Model AIC: {model_fit.aic}")
+        st.write(f"Model BIC: {model_fit.bic}")
         if verbose:
             print(model_fit.summary())
         
         # Forecast
         forecast_steps = len(test_demand)
         forecast = model_fit.get_forecast(steps=forecast_steps)
+
         forecast_mean = forecast.predicted_mean
         
         # Calculate residuals
@@ -202,7 +204,8 @@ def forecast_node_multistep_sarima(train_series: pd.Series, test_series: pd.Seri
                                 order=order, 
                                 seasonal_order=seasonal_order)
                 results = model.fit(disp=False)
-                
+                st.write(f"Model AIC: {results.aic}")
+                st.write(f"Model BIC: {results.bic}")
                 # Forecast 'horizon' steps ahead
                 forecast = results.get_forecast(steps=horizon)
                 forecast_mean = forecast.predicted_mean

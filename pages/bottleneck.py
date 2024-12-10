@@ -84,7 +84,6 @@ def visualize_bottleneck_nodes(nodes, parser, threshold):
     - **Total Bottleneck Nodes Detected**: {len(nodes)}
     - **Bottleneck Threshold**: {threshold}
     - **Facility Type Breakdown**: {', '.join([f"{count} {type}" for type, count in type_counts.items()])}
-    - **Potential Supply Chain Impact**: High risk areas requiring immediate attention
     """)
 
 
@@ -97,6 +96,7 @@ with st.sidebar.expander("📊 Data Configuration", expanded=True):
     version = st.text_input(
         "Enter Version of the fetch", "GNN_1000_12_v2", key="graphversion"
     )
+    metadata_file = st.sidebar.file_uploader("Upload metadata.json", type="json")
 
 
 
@@ -108,24 +108,24 @@ try:
             temp_file.write(metadata_file.getvalue())
             temp_file_path = temp_file.name
 
-    parser = TemporalHeterogeneousGraphParser(
-        base_url=base_url,
-        version=version,
-        headers={"accept": "application/json"},
-        meta_data_path=temp_file_path,
-        use_local_files=use_local_files,
-        local_dir=local_dir + "/",
-    )
+        parser = TemporalHeterogeneousGraphParser(
+            base_url=base_url,
+            version=version,
+            headers={"accept": "application/json"},
+            meta_data_path=temp_file_path,
+            use_local_files=use_local_files,
+            local_dir=local_dir + "/",
+        )
 
-    temporal_graphs, hetero_obj = parser.create_temporal_graph(
-        regression=True,
-        out_steps=3,
-        multistep=False,
-        task="bd",
-        threshold=10,
-    )
-    G = temporal_graphs[len(temporal_graphs)][1]
-    st.sidebar.success('data loaded successfully')
+        temporal_graphs, hetero_obj = parser.create_temporal_graph(
+            regression=True,
+            out_steps=3,
+            multistep=False,
+            task="bd",
+            threshold=10,
+        )
+        G = temporal_graphs[len(temporal_graphs)][1]
+        st.sidebar.success('data loaded successfully')
 
 except Exception as e:
     st.error(f"An error occurred during training: {str(e)}")
@@ -177,6 +177,6 @@ if st_button:
     temporal_graphs = {1: ('placeholder', G)}
     demand_parts = test_single_step_regression(model, temporal_graphs, torch.nn.MSELoss(), label='FACILITY')
     nodes = get_bottleneck_nodes(demand_parts, parser.facility_supply, parser.id_map['FACILITY'], threshold)
-    st.write(nodes)
+    # st.write(nodes)
     visualize_bottleneck_nodes(nodes, parser, threshold)
     st.sidebar.success('Bottleneck detection completed successfully')

@@ -1,0 +1,150 @@
+id,name,type,location,size_category,max_capacity,current_capacity,safety_stock,max_parts
+W_001,Warehouse_1,supplier,Florida,small,1121,0.0,913,5
+W_002,Warehouse_2,supplier,California,medium,4298,0.0,694,10
+W_003,Warehouse_3,supplier,Washington,medium,5988,0.0,268,10
+W_004,Warehouse_4,supplier,Texas,medium,4880,0.0,124,10
+W_005,Warehouse_5,supplier,California,large,8613,0.0,464,15
+W_006,Warehouse_6,supplier,Massachusetts,large,7274,0.0,993,15
+W_007,Warehouse_7,supplier,Oregon,medium,4854,0.0,787,10
+W_008,Warehouse_8,supplier,New York,large,7512,0.0,927,15
+W_009,Warehouse_9,supplier,California,medium,5337,0.0,179,10
+W_010,Warehouse_10,supplier,Florida,medium,4917,0.0,480,10
+W_011,Warehouse_11,supplier,Arizona,small,1196,0.0,62,5
+W_012,Warehouse_12,supplier,Florida,small,2748,0.0,804,5
+W_013,Warehouse_13,supplier,California,large,6691,0.0,112,15
+W_014,Warehouse_14,supplier,Georgia,large,9955,0.0,512,15
+W_015,Warehouse_15,supplier,Texas,small,1828,0.0,838,5
+W_016,Warehouse_16,supplier,Arizona,medium,3138,0.0,360,10
+W_017,Warehouse_17,supplier,California,medium,5844,0.0,317,10
+W_018,Warehouse_18,supplier,Oregon,large,6662,0.0,118,15
+W_019,Warehouse_19,supplier,Oregon,medium,4509,0.0,693,10
+W_020,Warehouse_20,supplier,Georgia,small,1162,0.0,933,5
+W_021,Warehouse_21,supplier,Massachusetts,small,2471,0.0,295,5
+W_022,Warehouse_22,supplier,Washington,small,2069,0.0,525,5
+W_023,Warehouse_23,supplier,New York,medium,3881,0.0,378,10
+W_024,Warehouse_24,supplier,California,small,1297,0.0,150,5
+W_025,Warehouse_25,supplier,Arizona,large,9768,0.0,792,15
+W_026,Warehouse_26,supplier,Arizona,small,2840,0.0,834,5
+W_027,Warehouse_27,supplier,Washington,large,9386,0.0,961,15
+W_028,Warehouse_28,supplier,Texas,large,7818,0.0,865,15
+W_029,Warehouse_29,supplier,Florida,medium,4337,0.0,54,10
+W_030,Warehouse_30,supplier,New York,large,6923,0.0,307,15
+W_031,Warehouse_31,supplier,New York,small,1015,0.0,642,5
+W_032,Warehouse_32,supplier,Arizona,medium,3477,0.0,139,10
+W_033,Warehouse_33,supplier,California,medium,3249,0.0,206,10
+W_034,Warehouse_34,supplier,Washington,large,9110,0.0,757,15
+W_035,Warehouse_35,supplier,Florida,small,1142,0.0,825,5
+W_036,Warehouse_36,supplier,Georgia,medium,5402,0.0,827,10
+W_037,Warehouse_37,supplier,Oregon,medium,3929,0.0,569,10
+W_038,Warehouse_38,supplier,Massachusetts,medium,3054,0.0,251,10
+W_039,Warehouse_39,supplier,Arizona,small,1699,0.0,915,5
+W_040,Warehouse_40,supplier,Washington,medium,5996,0.0,376,10
+W_041,Warehouse_41,supplier,Florida,large,8291,0.0,157,15
+W_042,Warehouse_42,supplier,Washington,small,1633,0.0,274,5
+W_043,Warehouse_43,supplier,Oregon,small,1125,0.0,163,5
+W_044,Warehouse_44,supplier,Georgia,large,7613,0.0,600,15
+W_045,Warehouse_45,supplier,Arizona,medium,4394,0.0,738,10
+W_046,Warehouse_46,supplier,California,large,9467,0.0,298,15
+W_047,Warehouse_47,supplier,New York,medium,5387,0.0,531,10
+W_048,Warehouse_48,supplier,Florida,small,2821,0.0,911,5
+W_049,Warehouse_49,supplier,Arizona,medium,4414,0.0,193,10
+W_050,Warehouse_50,supplier,Washington,large,8406,0.0,944,15
+W_051,Warehouse_51,supplier,California,small,2354,0.0,354,5
+W_052,Warehouse_52,supplier,Massachusetts,medium,4692,0.0,956,10
+W_053,Warehouse_53,supplier,California,large,6580,0.0,87,15
+W_054,Warehouse_54,supplier,New York,large,9148,0.0,278,15
+W_055,Warehouse_55,supplier,Oregon,large,6886,0.0,278,15
+W_056,Warehouse_56,supplier,Washington,large,6170,0.0,755,15
+W_057,Warehouse_57,supplier,Florida,medium,3649,0.0,371,10
+W_058,Warehouse_58,supplier,Oregon,large,6293,0.0,436,15
+W_059,Warehouse_59,supplier,Florida,medium,4056,0.0,681,10
+W_060,Warehouse_60,supplier,Florida,small,2018,0.0,728,5
+W_061,Warehouse_61,subassembly,Arizona,small,2410,0.0,458,5
+W_062,Warehouse_62,subassembly,Florida,medium,5318,0.0,108,10
+W_063,Warehouse_63,subassembly,Massachusetts,large,6093,0.0,499,15
+W_064,Warehouse_64,subassembly,New York,small,1779,0.0,65,5
+W_065,Warehouse_65,subassembly,Arizona,small,1476,0.0,891,5
+W_066,Warehouse_66,subassembly,Massachusetts,medium,5615,0.0,929,10
+W_067,Warehouse_67,subassembly,Massachusetts,medium,4619,0.0,281,10
+W_068,Warehouse_68,subassembly,Texas,large,7960,0.0,910,15
+W_069,Warehouse_69,subassembly,Georgia,small,2146,0.0,779,5
+W_070,Warehouse_70,subassembly,Washington,small,2374,0.0,827,5
+W_071,Warehouse_71,subassembly,Arizona,small,1306,0.0,170,5
+W_072,Warehouse_72,subassembly,Georgia,medium,5881,0.0,985,10
+W_073,Warehouse_73,subassembly,Texas,medium,3309,0.0,582,10
+W_074,Warehouse_74,subassembly,Washington,small,2750,0.0,969,5
+W_075,Warehouse_75,subassembly,New York,small,2525,0.0,170,5
+W_076,Warehouse_76,subassembly,Georgia,large,7641,0.0,255,15
+W_077,Warehouse_77,subassembly,Georgia,small,1830,0.0,372,5
+W_078,Warehouse_78,subassembly,Texas,large,7394,0.0,995,15
+W_079,Warehouse_79,subassembly,Florida,medium,5543,0.0,964,10
+W_080,Warehouse_80,subassembly,New York,medium,5338,0.0,155,10
+W_081,Warehouse_81,subassembly,New York,medium,5456,0.0,771,10
+W_082,Warehouse_82,subassembly,Texas,medium,3102,0.0,232,10
+W_083,Warehouse_83,subassembly,Texas,small,2553,0.0,486,5
+W_084,Warehouse_84,subassembly,Arizona,small,2946,0.0,382,5
+W_085,Warehouse_85,subassembly,Oregon,medium,4508,0.0,808,10
+W_086,Warehouse_86,subassembly,Georgia,medium,4157,0.0,735,10
+W_087,Warehouse_87,subassembly,California,medium,5191,0.0,184,10
+W_088,Warehouse_88,subassembly,Oregon,medium,5236,0.0,59,10
+W_089,Warehouse_89,subassembly,Massachusetts,large,7341,0.0,57,15
+W_090,Warehouse_90,subassembly,Arizona,small,1526,0.0,233,5
+W_091,Warehouse_91,subassembly,Massachusetts,medium,5699,0.0,70,10
+W_092,Warehouse_92,subassembly,Oregon,large,7481,0.0,343,15
+W_093,Warehouse_93,subassembly,Oregon,medium,3714,0.0,868,10
+W_094,Warehouse_94,subassembly,Massachusetts,small,2388,0.0,649,5
+W_095,Warehouse_95,subassembly,Massachusetts,large,6102,0.0,508,15
+W_096,Warehouse_96,subassembly,Georgia,medium,5027,0.0,811,10
+W_097,Warehouse_97,subassembly,California,medium,4155,0.0,617,10
+W_098,Warehouse_98,subassembly,New York,large,8700,0.0,167,15
+W_099,Warehouse_99,subassembly,California,medium,3460,0.0,209,10
+W_100,Warehouse_100,subassembly,New York,large,6624,0.0,483,15
+W_101,Warehouse_101,subassembly,New York,large,6326,0.0,509,15
+W_102,Warehouse_102,subassembly,Massachusetts,medium,4283,0.0,749,10
+W_103,Warehouse_103,subassembly,New York,large,6723,0.0,255,15
+W_104,Warehouse_104,subassembly,New York,large,6379,0.0,396,15
+W_105,Warehouse_105,subassembly,Georgia,large,9628,0.0,508,15
+W_106,Warehouse_106,subassembly,Arizona,large,7794,0.0,221,15
+W_107,Warehouse_107,subassembly,Washington,small,1468,0.0,676,5
+W_108,Warehouse_108,subassembly,Massachusetts,small,1763,0.0,549,5
+W_109,Warehouse_109,subassembly,Florida,small,1795,0.0,321,5
+W_110,Warehouse_110,subassembly,Florida,medium,3296,0.0,140,10
+W_111,Warehouse_111,subassembly,New York,medium,5081,0.0,688,10
+W_112,Warehouse_112,subassembly,Georgia,small,2403,0.0,723,5
+W_113,Warehouse_113,lam,Massachusetts,small,2645,0.0,219,5
+W_114,Warehouse_114,lam,Massachusetts,small,1884,0.0,555,5
+W_115,Warehouse_115,lam,Florida,medium,4697,0.0,519,10
+W_116,Warehouse_116,lam,Florida,medium,3647,0.0,763,10
+W_117,Warehouse_117,lam,Florida,large,7681,0.0,658,15
+W_118,Warehouse_118,lam,Texas,small,2381,0.0,322,5
+W_119,Warehouse_119,lam,Oregon,large,6053,0.0,245,15
+W_120,Warehouse_120,lam,Washington,large,9563,0.0,191,15
+W_121,Warehouse_121,lam,New York,medium,5635,0.0,510,10
+W_122,Warehouse_122,lam,New York,small,1362,0.0,870,5
+W_123,Warehouse_123,lam,Texas,small,2295,0.0,184,5
+W_124,Warehouse_124,lam,Massachusetts,small,1385,0.0,779,5
+W_125,Warehouse_125,lam,Georgia,medium,4361,0.0,998,10
+W_126,Warehouse_126,lam,Arizona,medium,4214,0.0,175,10
+W_127,Warehouse_127,lam,Florida,large,9854,0.0,882,15
+W_128,Warehouse_128,lam,California,small,1198,0.0,232,5
+W_129,Warehouse_129,lam,Florida,large,6698,0.0,491,15
+W_130,Warehouse_130,lam,California,large,7157,0.0,234,15
+W_131,Warehouse_131,lam,Florida,medium,4681,0.0,965,10
+W_132,Warehouse_132,lam,New York,large,9711,0.0,263,15
+W_133,Warehouse_133,lam,New York,medium,5933,0.0,701,10
+W_134,Warehouse_134,lam,Oregon,medium,5605,0.0,727,10
+W_135,Warehouse_135,lam,Georgia,medium,5114,0.0,689,10
+W_136,Warehouse_136,lam,Texas,small,1030,0.0,261,5
+W_137,Warehouse_137,lam,Washington,large,6799,0.0,880,15
+W_138,Warehouse_138,lam,Washington,medium,3828,0.0,276,10
+W_139,Warehouse_139,lam,Florida,medium,3435,0.0,97,10
+W_140,Warehouse_140,lam,Florida,medium,3582,0.0,921,10
+W_141,Warehouse_141,lam,Massachusetts,large,7876,0.0,403,15
+W_142,Warehouse_142,lam,Massachusetts,small,2026,0.0,598,5
+W_143,Warehouse_143,lam,California,medium,3976,0.0,507,10
+W_144,Warehouse_144,lam,Massachusetts,large,9475,0.0,78,15
+W_145,Warehouse_145,lam,California,large,7634,0.0,435,15
+W_146,Warehouse_146,lam,Texas,small,1778,0.0,406,5
+W_147,Warehouse_147,lam,Massachusetts,small,1880,0.0,604,5
+W_148,Warehouse_148,lam,Florida,small,1738,0.0,696,5
+W_149,Warehouse_149,lam,Arizona,small,1556,0.0,488,5

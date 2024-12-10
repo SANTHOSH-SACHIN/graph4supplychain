@@ -1,7 +1,7 @@
 import streamlit as st
 from ts_models.arima_st import SingleStepARIMA, MultiStepARIMA
 from ts_models.sarima_st import SingleStepSarimaAnalyzer, MultiStepSarimaAnalyzer
-from ts_models.cnnlstm_st import SingleStepCNNLSTMAnalyzer
+# from ts_models.cnnlstm_st import SingleStepCNNLSTMAnalyzer
 from ts_models.xgboost_st import XGBoostForecaster
 from ts_models.prophet_st import SingleStepProphet, MultiStepProphet
 from utils.parser_st import TemporalHeterogeneousGraphParser
@@ -36,7 +36,7 @@ class StreamlitTimeSeriesAnalyzer:
                 "multi_step_arima": MultiStepARIMA(self.metadata_path),
                 "single_step_sarima": SingleStepSarimaAnalyzer(self.metadata_path),
                 "multi_step_sarima": MultiStepSarimaAnalyzer(self.metadata_path),
-                "single_step_cnnlstm": SingleStepCNNLSTMAnalyzer(self.metadata_path),
+                # "single_step_cnnlstm": SingleStepCNNLSTMAnalyzer(self.metadata_path),
                 "single_step_xgboost": XGBoostForecaster(self.metadata_path),
                 "multi_step_xgboost": XGBoostForecaster(self.metadata_path),
                 "single_step_prophet": SingleStepProphet(self.metadata_path),
@@ -74,7 +74,7 @@ def plot_single_step_forecast(
         linewidth=2,
     )
 
-    if model_type in ["CNN-LSTM", "XGBoost"]:
+    if model_type in ["XGBoost"]:
         lookback = lookback or 3
         forecast_index = test_demand.index[lookback:]
         if len(forecast_index) > len(demand_forecast):
@@ -276,18 +276,14 @@ if metadata_file is not None:
             node_id = st.selectbox("Select Node for Analysis", demand_df.columns)
 
             if analysis_type == "Single-Step":
-                model_type = st.selectbox("Select a Timeseries Model",["ARIMA", "SARIMA", "CNN-LSTM", "XGBOOST","PROPHET"])
+                model_type = st.selectbox("Select a Timeseries Model",["ARIMA", "SARIMA", "XGBOOST","PROPHET"])
                 
             else:
                 model_type = st.selectbox("Select a Timeseries Model", ["ARIMA","SARIMA","XGBOOST"])
 
             lookback = None
-            if model_type == "CNN-LSTM":
-                st.sidebar.subheader("CNN-LSTM Parameters")
-                lookback = st.sidebar.slider("Lookback Period", 3, 10, 3)
-                num_epochs = st.sidebar.slider("Number of Epochs", 50, 200, 100)
-                batch_size = st.sidebar.slider("Batch Size", 16, 64, 32)
-            elif model_type == "XGBoost":
+
+            if model_type == "XGBoost":
                 st.sidebar.subheader("XGBoost Parameters")
                 lookback = st.sidebar.slider("Lookback Period", 3, 10, 3)
                 n_estimators = st.sidebar.slider("Number of Estimators", 50, 500, 100)
@@ -340,33 +336,7 @@ if metadata_file is not None:
 
                         st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
                     
-                    elif model_type == "CNN-LSTM":
-                        with st.spinner("Training CNN-LSTM model..."):
-                            demand_forecast, demand_mape = analyzer.models[
-                                "single_step_cnnlstm"
-                            ].forecast_node_cnn_lstm(
-                                train_demand,
-                                test_demand,
-                                node_id,
-                                "demand",
-                                lookback=lookback,
-                                epochs=num_epochs,
-                                batch_size=batch_size,
-                            )
-                            fig = plot_single_step_forecast(
-                            train_demand,
-                            test_demand,
-                            demand_forecast,
-                            model_type,
-                            node_id,
-                            demand_mape,
-                            lookback,
-                            )
-                            st.pyplot(fig)
-                            plt.close()
-
-                            st.metric(f"{model_type} Demand Forecast MAPE", f"{demand_mape:.2f}%")
-                            
+                         
                     elif model_type == "PROPHET":
                         with st.spinner("Training Prophet model..."):
                             demand_forecast, demand_mape = analyzer.models[
@@ -417,6 +387,7 @@ if metadata_file is not None:
                         )
                     
                     if forecast_horizons:
+                            st.write("Forecasting for the following horizons:[1,2,3,4,5,6]")
                             if model_type == "ARIMA":
                                 forecasts, mapes = analyzer.models['multi_step_arima'].forecast_node_multistep(
                                     train_demand, test_demand, forecast_horizons

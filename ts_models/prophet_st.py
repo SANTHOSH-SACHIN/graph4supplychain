@@ -6,11 +6,60 @@ from typing import Dict, List, Tuple
 import warnings
 import matplotlib.pyplot as plt
 import seaborn as sns
+import streamlit as st
 from dateutil.relativedelta import relativedelta
 from prophet.diagnostics import cross_validation, performance_metrics
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_percentage_error
 warnings.filterwarnings('ignore')
+
+def calculate_prophet_aic_bic(model, train_df):
+    """
+    Calculate AIC and BIC for a Prophet model
+    
+    Parameters:
+    -----------
+    model : Prophet model
+        Fitted Prophet model
+    train_df : pd.DataFrame
+        Training dataframe in Prophet format with 'ds' and 'y' columns
+    
+    Returns:
+    --------
+    tuple: (AIC score, BIC score)
+    """
+    # Number of observations
+    n = len(train_df)
+    
+    # Calculate log-likelihood 
+    # For Prophet, we'll use the residuals to approximate log-likelihood
+    forecast = model.predict(train_df)
+    residuals = train_df['y'].values - forecast['yhat'].values
+    
+    # Estimate variance of residuals
+    sigma_squared = np.var(residuals)
+    
+    # Number of parameters 
+    # This is an approximation as Prophet has multiple components
+    num_params = (
+        1  # Baseline trend
+        + (1 if model.yearly_seasonality else 0)  # Yearly seasonality 
+        + (1 if model.weekly_seasonality else 0)  # Weekly seasonality
+        + (1 if model.daily_seasonality else 0)   # Daily seasonality
+        + 1  # Changepoint prior scale
+        + 1  # Seasonality prior scale
+    )
+    
+    # AIC Calculation
+    # AIC = 2k - 2ln(L)
+    # k is number of parameters, L is maximum likelihood
+    aic = 2 * num_params + n * np.log(sigma_squared)
+    
+    # BIC Calculation
+    # BIC = k * ln(n) - 2ln(L)
+    bic = num_params * np.log(n) + n * np.log(sigma_squared)
+    
+    return aic, bic
 
 class SingleStepProphet:
     def __init__(self, metadata_path: str):
@@ -25,6 +74,42 @@ class SingleStepProphet:
         """Calculate Mean Absolute Percentage Error"""
         return mean_absolute_percentage_error(actual, predicted) * 100
     
+    def calculate_aic_bic(self, train_series: pd.Series, params: Dict = None):
+        """
+        Calculate and write AIC and BIC for the forecast_node method
+        
+        Parameters:
+        -----------
+        train_series : pd.Series
+            Training time series data
+        params : Dict, optional
+            Prophet model parameters
+        """
+        if params is None:
+            params = {
+                'yearly_seasonality': False,
+                'weekly_seasonality': True,
+                'daily_seasonality': False,
+                'seasonality_mode': 'multiplicative',
+                'changepoint_prior_scale': 0.05,
+                'seasonality_prior_scale': 10
+            }
+        
+        # Prepare data in Prophet format
+        train_df = self.prepare_prophet_data(train_series)
+        
+        # Initialize and fit Prophet model
+        model = Prophet(**params)
+        model.fit(train_df)
+        
+        # Calculate AIC and BIC
+        aic, bic = calculate_prophet_aic_bic(model, train_df)
+        
+        # Write results using Streamlit
+        st.write("### AIC and BIC Scores")
+        st.write(f"AIC Score: {aic:.2f}")
+        st.write(f"BIC Score: {bic:.2f}")
+
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
         """Load and combine all timestamp data files into a single DataFrame"""
         all_data = []
@@ -101,21 +186,15 @@ class SingleStepProphet:
         model.fit(train_df)
         
         # Create future dataframe for prediction
-        # future = model.make_future_dataframe(periods=len(test_series), freq='M')
         future = pd.DataFrame({'ds': test_series.index})
         forecast = model.predict(future)
         
-        # Get predictions for test set
-        # predictions = pd.Series(
-        #     forecast.iloc[-len(test_series):]['yhat'].values,
-        #     index=test_series.index
-        # )
-
         predictions = pd.Series(forecast['yhat'].values, index=test_series.index)
         
         # Calculate MAPE
         mape = self.calculate_mape(test_series.values, predictions.values)
-        
+        self.calculate_aic_bic(train_series)
+
         return predictions, mape
 
     def plot_forecast_comparison(self, 
@@ -192,6 +271,46 @@ class MultiStepProphet:
     def calculate_mape(self, actual: np.array, predicted: np.array) -> float:
         """Calculate Mean Absolute Percentage Error"""
         return mean_absolute_percentage_error(actual, predicted) * 100
+
+    def calculate_aic_bic(self, train_series: pd.Series, forecast_horizons: List[int], params: Dict = None):
+        """
+        Calculate and write AIC and BIC for multi-step forecasting
+        
+        Parameters:
+        -----------
+        train_series : pd.Series
+            Training time series data
+        forecast_horizons : List[int]
+            List of forecast horizons to calculate AIC/BIC for
+        params : Dict, optional
+            Prophet model parameters
+        """
+        if params is None:
+            params = {
+                'yearly_seasonality': True,
+                'weekly_seasonality': False,
+                'daily_seasonality': False,
+                'seasonality_mode': 'multiplicative'
+            }
+        
+        st.write("### Multi-Step AIC and BIC Scores")
+        
+        for horizon in forecast_horizons:
+            # Prepare data in Prophet format
+            train_df = self.prepare_prophet_data(train_series)
+            
+            # Train model
+            model = Prophet(**params)
+            model.fit(train_df)
+            
+            # Calculate AIC and BIC
+            aic, bic = calculate_prophet_aic_bic(model, train_df)
+            
+            # Write results for each horizon
+            st.write(f"Forecast Horizon {horizon}:")
+            st.write(f"AIC Score: {aic:.2f}")
+            st.write(f"BIC Score: {bic:.2f}")
+
 
     def load_timestamp_data(self, timestamp_files: List[str]) -> pd.DataFrame:
         """Load and combine all timestamp data files into a single DataFrame"""
@@ -283,7 +402,7 @@ class MultiStepProphet:
             forecasts.append(horizon_forecast)
             actual = test_series.iloc[horizon-1:].values
             mapes[horizon] = self.calculate_mape(actual, horizon_forecast)
-        
+        self.calculate_aic_bic(train_series, forecast_horizons=[1, 2, 3])
         return forecasts, mapes
 
     def plot_multistep_forecast_comparison(self, 

@@ -50,7 +50,6 @@ class XGBoostForecaster:
 
         # Drop rows with NaN values
         df = df.dropna()
-        st.dataframe(df)
         return df
     
     def train_test_split(self, series: pd.Series, train_size: float = 0.7) -> Tuple[pd.Series, pd.Series]:
@@ -67,7 +66,7 @@ class XGBoostForecaster:
         return X, y
     
     def single_step_forecast(self, train_series: pd.Series, test_series: pd.Series,
-                           params: Dict = None) -> Tuple[np.ndarray, float]:
+                           params: Dict = None) -> Tuple[np.ndarray, float, float, float]:
         """Perform single-step forecasting using XGBoost"""
         if params is None:
             params = {
@@ -99,10 +98,21 @@ class XGBoostForecaster:
         predictions = model.predict(X_test)
         mape = self.calculate_mape(y_test, predictions)
         
+        # Calculate AIC and BIC
+        residuals = y_test - predictions
+        n = len(y_test)
+        k = model.get_params()['n_estimators'] * (model.get_params()['max_depth'] + 1)  # Approximate number of parameters
+        sigma = np.std(residuals)
+        log_likelihood = -n/2 * np.log(2 * np.pi * sigma**2) - (np.sum(residuals**2)) / (2 * sigma**2)
+        aic = 2 * k - 2 * log_likelihood
+        bic = k * np.log(n) - 2 * log_likelihood
+        
+        st.write(f"Single Step Forecast - AIC: {aic:.2f}, BIC: {bic:.2f}")
+        
         return predictions, mape
     
     def multi_step_forecast(self, train_series: pd.Series, test_series: pd.Series,
-                          forecast_horizons: List[int], params: Dict = None) -> Tuple[List[np.ndarray], Dict[int, float]]:
+                          forecast_horizons: List[int], params: Dict = None) -> Tuple[List[np.ndarray], Dict[int, float], Dict[int, float], Dict[int, float]]:
         """Perform multi-step forecasting using XGBoost"""
         if params is None:
             params = {
@@ -115,6 +125,8 @@ class XGBoostForecaster:
         
         forecasts = []
         mapes = {}
+        aics = {}
+        bics = {}
         
         for horizon in forecast_horizons:
             # Initialize array for storing predictions
@@ -159,6 +171,22 @@ class XGBoostForecaster:
             forecasts.append(horizon_forecast)
             actual = test_series.iloc[horizon-1:].values
             mapes[horizon] = self.calculate_mape(actual, horizon_forecast)
+            
+            # Calculate AIC and BIC for this horizon
+            residuals = actual - horizon_forecast
+            n = len(actual)
+            k = model.get_params()['n_estimators'] * (model.get_params()['max_depth'] + 1)  # Approximate number of parameters
+            sigma = np.std(residuals)
+            log_likelihood = -n/2 * np.log(2 * np.pi * sigma**2) - (np.sum(residuals**2)) / (2 * sigma**2)
+            aic = 2 * k - 2 * log_likelihood
+            bic = k * np.log(n) - 2 * log_likelihood
+            aics[horizon] = aic
+            bics[horizon] = bic
+            
+        # Output AIC and BIC for multi-step forecasts
+        st.write("Multi-Step Forecast - AIC and BIC for each horizon:")
+        for horizon in forecast_horizons:
+            st.write(f"Horizon {horizon} - AIC: {aics[horizon]:.2f}, BIC: {bics[horizon]:.2f}")
         
         return forecasts, mapes
     

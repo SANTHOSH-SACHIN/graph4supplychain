@@ -7,7 +7,7 @@ import warnings
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_percentage_error
 import seaborn as sns
-
+import streamlit as st
 warnings.filterwarnings('ignore')
 
 class SingleStepARIMA:
@@ -22,7 +22,7 @@ class SingleStepARIMA:
     def calculate_mape(self, actual: np.array, predicted: np.array) -> float:
         """Calculate Mean Absolute Percentage Error"""
         return mean_absolute_percentage_error(actual, predicted) * 100
-    
+
     def train_test_split(self, df: pd.DataFrame, train_size: float = 0.7) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Split the time series data into training and testing sets"""
         n = len(df)
@@ -124,6 +124,9 @@ class SingleStepARIMA:
         """Fit ARIMA model on training data and forecast for test period"""
         model = ARIMA(train_series, order=order)
         results = model.fit()
+        # AIC BIC
+        st.write(f"AIC: {results.aic}")
+        st.write(f"BIC: {results.bic}")
         forecast = results.forecast(steps=len(test_series))
         mape = self.calculate_mape(test_series.values, forecast.values)
         return forecast, mape
@@ -226,7 +229,11 @@ class MultiStepARIMA:
                 try:
                     model = ARIMA(train_data, order=order)
                     results = model.fit()
-                    
+                    # AIC BIC
+                    st.write(f"AIC: {results.aic}")
+                    st.write(f"BIC: {results.bic}")
+                    # Draw a line 
+                    st.write ("-"*50)
                     # Forecast 'horizon' steps ahead
                     forecast = results.forecast(steps=horizon)
                     

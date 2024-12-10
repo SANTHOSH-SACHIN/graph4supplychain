@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_percentage_error
 import seaborn as sns
 warnings.filterwarnings('ignore')
-
+import streamlit as st
 class BaseSarimaAnalyzer:
     """Base class with common functionality for SARIMA analysis"""
     def __init__(self, metadata_path: str):
@@ -59,7 +59,9 @@ class BaseSarimaAnalyzer:
                                         enforce_invertibility=False
                                     )
                                     results = model.fit(disp=False)
-                                    
+                                    # AIC BIC
+                                    st.write(f" AIC: {results.aic:.2f}")
+                                    st.write(f" BIC: {results.bic:.2f}")
                                     if results.aic < best_aic:
                                         best_aic = results.aic
                                         best_params = (p, d, q)
@@ -130,6 +132,8 @@ class SingleStepSarimaAnalyzer(BaseSarimaAnalyzer):
                 enforce_invertibility=False
             )
             results = model.fit(disp=False)
+            st.write(f" AIC: {results.aic:.2f}")
+            st.write(f" BIC: {results.bic:.2f}")
             forecast = results.forecast(steps=1)
             forecasts[i] = forecast.iloc[0]
         
@@ -230,6 +234,8 @@ class MultiStepSarimaAnalyzer(BaseSarimaAnalyzer):
                     enforce_invertibility=False
                 )
                 results = model.fit(disp=False)
+                st.write(f" AIC: {results.aic:.2f}")
+                st.write(f" BIC: {results.bic:.2f}")
                 forecast = results.forecast(steps=horizon)
                 horizon_forecast[i] = forecast.iloc[-1]
             
