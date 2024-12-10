@@ -11,3 +11,16 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
+  docs:
+    build: .
+    command: mkdocs serve -a 0.0.0.0:8000
+    volumes:
+      - .:/app
+    # Port mapping for documentation server
+    # Format: "host_port:container_port"
+    # Change the left number (8000) to modify the port on your host machine/VPS
+    # Example: "9001:8000" would make the docs available on port 9001
+    ports:
+      - "8601:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
