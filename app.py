@@ -75,8 +75,8 @@ def main():
             st.Page("pages/sparsity.py", title="Sparsity"),
         ],
         "Time Series": [
-            st.Page("pages/time_series.py", title="time series"),
-            st.Page("pages/time_series_up.py", title="time series up"),
+            # st.Page("pages/time_series.py", title="time series"),
+            st.Page("pages/time_series_up.py", title="Time Series"),
             st.Page("pages/hybrid_data.py", title="Hybrid data"),
         ],
         "Analysis": [
