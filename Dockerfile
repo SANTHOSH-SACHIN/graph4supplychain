@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the rest of the application
 COPY . .
 
+RUN mkdocs build
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV SERVER_URL=http://172.17.149.236/api
