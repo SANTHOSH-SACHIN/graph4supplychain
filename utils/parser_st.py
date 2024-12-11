@@ -461,6 +461,12 @@ class TemporalHeterogeneousGraphParser:
                         src = edge[self.get_edge_index("PARTSToFACILITY", 'source')]
                         if src not in list_pop and src not in sa_demand:
                             list_pop.append(edge[self.get_edge_index("PARTSToFACILITY", 'source')])
+                            
+            for parts in data['node_values']['PARTS']:
+                source=parts[self.get_node_index('PARTS','id')]
+                if parts[self.get_node_index('PARTS','type')]=='raw':
+                    if source not in raw_demand:
+                        list_pop.append(source)
     
             demand={}
             demand_facility={}
