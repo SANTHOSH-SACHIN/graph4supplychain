@@ -9,6 +9,7 @@ from gnn_models import (
     test_multistep_classification,
 )
 from tempfile import NamedTemporaryFile
+
 # Custom CSS for card styling
 st.markdown("""
 <style>
@@ -33,13 +34,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title('Model Testing Dashboard')
-
 # Sidebar for configuration
 with st.sidebar:
     st.header("🔧 Configuration")
     local_dir = st.text_input("Local Directory Path", "./data")
-    version = st.text_input("Enter Version", "test_1", key="test_graph_version")
+    version = st.text_input("Enter Version", "latest_test", key="test_graph_version")
     metadata_file = st.sidebar.file_uploader("Upload metadata.json", type="json")
 
     if metadata_file is not None:
@@ -56,7 +55,7 @@ with st.sidebar:
             local_dir=local_dir + "/",
         )
 
-        regression = st.selectbox("Regression task:", options=[True, False], index=1)
+        regression = st.selectbox("Regression task:", options=[True, False], index=0)
         multistep = st.selectbox("Multistep", options=[True, False], index=1)
         out_steps = 1 if not multistep else st.number_input("Output steps:", min_value=1, value=3)
         task = st.selectbox("Task type:", options=['df'], index=0)
@@ -64,8 +63,9 @@ with st.sidebar:
 
         if st.button("Parse Data"):
             test_parser.validate_parser()
+            st.session_state.data_parsed = True
             st.success("CSV data converted to JSON format")
-            temporal_graphs_test, hetero_obj_test = test_parser.create_temporal_graph(
+            st.session_state.temporal_graphs_test, st.session_state.hetero_obj_test = test_parser.create_temporal_graph(
                 regression=regression,
                 out_steps=out_steps,
                 multistep=multistep,
@@ -74,32 +74,36 @@ with st.sidebar:
             )
             st.success("Test data parsed")
 
+        model_file = st.file_uploader("Upload Model (.pth)", type=["pth"])
+        if model_file:
+            model_path = f"./{model_file.name}"
+            with open(model_path, "wb") as f:
+                f.write(model_file.getbuffer())
 
-st.markdown("## 📊 Results and Analysis")
+            try:
+                model = torch.load(model_path)
+                model.eval()
+                st.success(f"Model {model_file.name} loaded successfully")
+                st.session_state.model = model
+                st.session_state.regression = regression
+                st.session_state.multistep = multistep
+            except Exception as e:
+                st.error(f"Error loading model: {e}")
+                st.stop()
 
-# File uploader for model
-model_file = st.file_uploader("Upload Model (.pth)", type=["pth"])
-if model_file:
-    model_path = f"./{model_file.name}"
-    with open(model_path, "wb") as f:
-        f.write(model_file.getbuffer())
-
-    try:
-        model = torch.load(model_path)
-        model.eval()
-        st.success(f"Model {model_file.name} loaded successfully")
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        st.stop()
-
+# Main page content
+if "data_parsed" in st.session_state and st.session_state.data_parsed and "model" in st.session_state:
+    model = st.session_state.model
+    regression = st.session_state.regression
+    multistep = st.session_state.multistep
+    
     loss_fn = torch.nn.MSELoss() if regression else torch.nn.CrossEntropyLoss()
-    temporal_data = temporal_graphs_test if not multistep else hetero_obj_test
+    temporal_data = st.session_state.temporal_graphs_test if not multistep else st.session_state.hetero_obj_test
 
     # Model testing
     step_type = "Single Step" if not multistep else "Multistep"
     if step_type == "Single Step":
         if regression:
-            # results is a dictionary containing the metrics , in that remove "Mae"
             results = test_single_step_regression(model, temporal_data, loss_fn)
         else:
             results = test_single_step_classification(model, temporal_data, loss_fn)
@@ -108,7 +112,6 @@ if model_file:
             results = test_multistep_regression(model, temporal_data, loss_fn)
         else:
             results = test_multistep_classification(model, temporal_data, loss_fn)
-
 
     # Analysis and Inferences
     st.markdown("### 🧠 Analysis and Inferences")
@@ -145,7 +148,6 @@ if model_file:
                     # General inference for other numeric metrics
                     st.metric(f"{metric_name.capitalize()}", f"{metric_value:.2f}")
 
-
             elif isinstance(metric_value, list):
                 # Inferences for list metrics (e.g., trends or progressions)
                 st.line_chart(pd.DataFrame(metric_value, columns=[metric_name.capitalize()]))
@@ -158,6 +160,3 @@ if model_file:
                 st.info(f"📊 {metric_name.capitalize()} breakdown displayed above.")
     else:
         st.error("No inferences could be drawn as results data is missing or invalid.")
-
-
-
