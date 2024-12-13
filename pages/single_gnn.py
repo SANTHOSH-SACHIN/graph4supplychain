@@ -456,6 +456,8 @@ if metadata_file is not None:
                     print(str(e))
             else:
                 try:
+                    from time import time
+                    pstart = time()
                     # Initialize parser and create temporal graph
                     base_url = os.getenv("SERVER_URL")
                     parser = TemporalHeterogeneousGraphParser(
@@ -466,7 +468,7 @@ if metadata_file is not None:
                         use_local_files=True,
                         local_dir=local_dir + "/",
                     )
-
+                    
                     # Create temporal graphs based on task type
                     regression_flag = (
                         True if st.session_state.task_type == "Regression" else False
@@ -479,9 +481,11 @@ if metadata_file is not None:
                         task=task_forecast,
                         threshold=10,
                     )
-
+                    pend=time()
+                    st.write(f"Parser initialized in {pend-pstart} secs")
                     # Select the graph (e.g., at time step 10)
                     G = temporal_graphs[len(temporal_graphs)][1]
+                    mstart = time()
                     # Initialize model
                     model = Model3(
                         hidden_channels=hidden_channels,
@@ -491,7 +495,8 @@ if metadata_file is not None:
                     )
 
                     model = model.to(device)
-
+                    mend=time()
+                    st.write(f"Model initialized in {mend-mstart} secs")
                     # Configure optimizer and loss function
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 

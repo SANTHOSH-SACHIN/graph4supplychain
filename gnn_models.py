@@ -549,7 +549,7 @@ def train_classification(
 
             # Forward pass
             out = model(G.x_dict, G.edge_index_dict,len(G[label].y),label, G.edge_attr)
-            print(out.shape)
+            
             # Get training masks and compute loss
             train_mask = G[label]["train_mask"]
             train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
