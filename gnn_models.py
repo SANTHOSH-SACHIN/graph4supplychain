@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from typing import Dict, List, Tuple
 import warnings
 from torch_geometric.nn import global_mean_pool
+import psutil
+from memory_profiler import memory_usage
 
 warnings.filterwarnings("ignore")
 from dotenv import load_dotenv
@@ -619,147 +621,6 @@ def train_classification(
     return model, best_test_accuracy, best_test_loss, epoch_losses, epoch_accuracies
 
 
-# def train_regression(
-#     num_epochs,
-#     model,
-#     optimizer,
-#     loss_fn,
-#     temporal_graphs,
-#     label="PARTS",
-#     device="cpu",
-#     patience=5,
-# ):
-#     st.subheader("Training Progress . . .")
-#     progress_bar = st.progress(0)
-#     status_text = st.empty()
-
-#     best_test_r2 = -float("inf")
-#     best_test_mae = float("inf")
-#     patience_counter = 0
-#     best_state = None
-#     epoch_losses = []
-#     epoch_r2_scores = []
-
-#     for epoch in range(num_epochs):
-#         epoch_train_loss = 0.0
-#         epoch_test_loss = 0.0
-#         train_mse = 0.0
-#         train_mae = 0.0
-#         test_mse = 0.0
-#         test_mae = 0.0
-#         test_r2 = 0.0
-#         graph_count = 0
-
-#         for row in temporal_graphs:
-#             G = temporal_graphs[row][1]
-#             graph_count += 1
-
-#             # Training phase
-#             model.train()
-#             optimizer.zero_grad()
-
-#             # Forward pass
-#             out = model(G.x_dict, G.edge_index_dict, len(G[label].y),label, G.edge_attr).squeeze(-1)
-
-#             # Get training masks and compute loss
-#             train_mask = G[label]["train_mask"]
-#             train_loss = loss_fn(out[train_mask], G[label].y[train_mask])
-
-#             # Backward pass
-#             train_loss.backward()
-#             optimizer.step()
-
-#             # Compute training metrics
-#             with torch.no_grad():
-#                 train_pred = out[train_mask].cpu().numpy()
-#                 train_true = G[label].y[train_mask].cpu().numpy()
-#                 train_mse += mean_squared_error(train_true, train_pred)
-#                 train_mae += mean_absolute_error(train_true, train_pred)
-
-#             # Update epoch metrics for training
-#             epoch_train_loss += train_loss.item()
-
-#             # Evaluation phase
-#             model.eval()
-#             with torch.no_grad():
-#                 # Forward pass for testing
-#                 test_mask = G[label]["test_mask"]
-#                 test_pred = out[test_mask].cpu().numpy()
-#                 test_true = G[label].y[test_mask].cpu().numpy()
-
-#                 # Compute test metrics
-#                 test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
-#                 test_mse += mean_squared_error(test_true, test_pred)
-#                 test_mae += mean_absolute_error(test_true, test_pred)
-#                 test_r2 += r2_score(test_true, test_pred)
-
-#                 # Update epoch metrics for testing
-#                 epoch_test_loss += test_loss.item()
-
-#         # Average metrics over all graphs
-#         avg_train_loss = epoch_train_loss / graph_count
-#         avg_test_loss = epoch_test_loss / graph_count
-#         avg_train_mse = train_mse / graph_count
-#         avg_train_mae = train_mae / graph_count
-#         avg_test_mse = test_mse / graph_count
-#         avg_test_mae = test_mae / graph_count
-#         avg_test_r2 = test_r2 / graph_count
-
-#         epoch_losses.append(avg_test_loss)
-#         epoch_r2_scores.append(avg_test_r2)
-
-#         # Check for improvement
-#         if avg_test_loss < best_test_mae:
-#             best_test_mae = avg_test_loss
-#             best_test_r2 = avg_test_r2
-#             best_state = model.state_dict().copy()
-#             patience_counter = 0  # Reset patience counter
-#         else:
-#             patience_counter += 1
-
-#         # Early stopping
-#         if patience_counter >= patience:
-#             st.write(f"Early stopping triggered at epoch {epoch + 1}")
-#             break
-
-#         # Update progress bar
-#         progress_bar.progress((epoch + 1) / num_epochs)
-#         status_text.text(
-#             f"Epoch {epoch + 1}/{num_epochs} - Train Loss: {avg_train_loss**0.5:.4f}, Train R²: {avg_test_r2:.4f}"
-#         )
-
-#     # Load best model
-#     if best_state:
-#         model.load_state_dict(best_state)
-#     return model, best_test_r2, best_test_mae**0.5, epoch_losses, epoch_r2_scores
-
-
-# def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
-#     model.eval()
-#     test_true_all = []
-#     test_pred_all = []
-#     total_loss = 0.0
-
-#     with torch.no_grad():
-#         for row in temporal_graphs:
-#             G = temporal_graphs[row][1]
-#             test_mask = G[label]
-#             out = model(G.x_dict, G.edge_index_dict, len(G[label].y),label, G.edge_attr).squeeze(-1)
-#             test_loss = loss_fn(out, G[label].y)
-#             total_loss += test_loss.item()
-
-#             test_pred = out.cpu().numpy()
-#             test_true = G[label].y.cpu().numpy()
-#             test_pred_all.append(test_pred)
-#             test_true_all.append(test_true)
-
-#     test_true_all = np.concatenate(test_true_all)
-#     test_pred_all = np.concatenate(test_pred_all)
-#     r2 = r2_score(test_true_all, test_pred_all)
-#     mae = mean_absolute_error(test_true_all, test_pred_all)
-
-#     return {"R2": r2, "MAE": mae, "Loss": total_loss / len(temporal_graphs), "Predictions":test_pred_all}
-
 
 def train_regression(
     num_epochs,
@@ -783,6 +644,18 @@ def train_regression(
     epoch_losses = []
     epoch_r2_scores = []
     epoch_adjusted_r2_scores = []
+
+    peak_memory = 0  # Track peak memory usage
+    peak_cpu_percent = 0  # Track peak CPU utilization
+
+    def track_resource_usage():
+        """Helper function to track memory and CPU usage."""
+        nonlocal peak_memory, peak_cpu_percent
+        process = psutil.Process()
+        mem_usage = process.memory_info().rss / (1024 ** 3)  # Convert to GB
+        cpu_percent = process.cpu_percent(interval=0.1)
+        peak_memory = max(peak_memory, mem_usage)
+        peak_cpu_percent = max(peak_cpu_percent, cpu_percent)
 
     for epoch in range(num_epochs):
         epoch_train_loss = 0.0
@@ -836,18 +709,21 @@ def train_regression(
                 test_loss = loss_fn(out[test_mask], G[label].y[test_mask])
                 test_mse += mean_squared_error(test_true, test_pred)
                 test_mae += mean_absolute_error(test_true, test_pred)
-                
+
                 # Calculate R² and Adjusted R²
                 n = len(test_true)  # number of observations
                 p = out.shape[1] if len(out.shape) > 1 else 1  # number of predictors
                 test_r2_value = r2_score(test_true, test_pred)
                 test_adjusted_r2_value = 1 - (1 - test_r2_value) * (n - 1) / (n - p - 1)
-                
+
                 test_r2 += test_r2_value
                 test_adjusted_r2 += test_adjusted_r2_value
 
                 # Update epoch metrics for testing
                 epoch_test_loss += test_loss.item()
+
+            # Track resource usage after processing a graph
+            track_resource_usage()
 
         # Average metrics over all graphs
         avg_train_loss = epoch_train_loss / graph_count
@@ -887,8 +763,15 @@ def train_regression(
     # Load best model
     if best_state:
         model.load_state_dict(best_state)
-    
+
+    # Display peak resource usage
+    st.subheader("Resource Utilization")
+    st.write(f"**Peak Memory Usage:** {peak_memory:.2f} GB")
+    st.write(f"**Peak CPU Usage:** {peak_cpu_percent:.2f}%")
+
     return model, best_test_r2, best_test_adjusted_r2, best_test_mae**0.5, epoch_losses, epoch_r2_scores, epoch_adjusted_r2_scores
+
+
 
 def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
     model.eval()
@@ -920,48 +803,6 @@ def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", 
     mae = mean_absolute_error(test_true_all, test_pred_all)
 
     return {"R2": r2 ,"Adjusted R2" : adjusted_r2 , "MAE": mae, "Loss": total_loss / len(temporal_graphs), "Predictions":test_pred_all}
-
-# def test_single_step_regression(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
-#     model.eval()
-#     test_true_all = []
-#     test_pred_all = []
-#     total_loss = 0.0
-
-#     with torch.no_grad():
-#         for row in temporal_graphs:
-#             G = temporal_graphs[row][1]
-#             test_mask = G[label]
-#             out = model(G.x_dict, G.edge_index_dict, len(G[label].y), label, G.edge_attr).squeeze(-1)
-#             test_loss = loss_fn(out, G[label].y)
-#             total_loss += test_loss.item()
-
-#             test_pred = out.cpu().numpy()
-#             test_true = G[label].y.cpu().numpy()
-            
-#             # Calculate adjusted R²
-#             n = len(test_true)  # number of observations
-#             p = out.shape[1] if len(out.shape) > 1 else 1  # number of predictors
-#             r2 = r2_score(test_true, test_pred)
-#             adjusted_r2 = 1 - (1 - r2) * (n - 1) / (n - p - 1)
-
-#             test_pred_all.append(test_pred)
-#             test_true_all.append(test_true)
-
-#     test_true_all = np.concatenate(test_true_all)
-#     test_pred_all = np.concatenate(test_pred_all)
-#     r2 = r2_score(test_true_all, test_pred_all)
-#     adjusted_r2 = 1 - (1 - r2) * (len(test_true_all) - 1) / (len(test_true_all) - out.shape[1] - 1)
-#     mae = mean_absolute_error(test_true_all, test_pred_all)
-
-#     return {
-#         "R2": r2, 
-#         "Adjusted R2": adjusted_r2, 
-#         "MAE": mae, 
-#         "Loss": total_loss / len(temporal_graphs), 
-#         "Predictions": test_pred_all
-#     }
-
-
 
 def test_single_step_classification(model, temporal_graphs, loss_fn, label="PARTS", device="cpu"):
     model.eval()

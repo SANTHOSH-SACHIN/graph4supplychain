@@ -903,7 +903,7 @@ class TemporalHeterogeneousGraphParser:
             self.node_schema = data["node_types"]
             self.edge_schema = data["relationship_types"]
         
-            self.set_date_df(timestamp, data)
+            # self.set_date_df(timestamp, data)
             json[timestamp] = data
             
             
@@ -938,7 +938,7 @@ class TemporalHeterogeneousGraphParser:
             self.set_df(timestamp)
             self.set_po_df(timestamp)
 
-        self.set_extended_df(json, 'PARTS')
+        # self.set_extended_df(json, 'PARTS')
         hetero_list = copy.deepcopy(temporal_graphs)
         if multistep:
             hetero_obj = self.multistep_data(hetero_list, out_steps)
