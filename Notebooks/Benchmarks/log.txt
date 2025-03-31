@@ -1,0 +1,757 @@
+PeMSD7
+----------------------------------------
+Encoder Type: GAT
+Epoch 1/50, Loss: 1.0065
+Epoch 2/50, Loss: 1.0057
+Epoch 3/50, Loss: 1.0051
+Epoch 4/50, Loss: 1.0045
+Epoch 5/50, Loss: 1.0039
+Epoch 6/50, Loss: 1.0034
+Epoch 7/50, Loss: 1.0030
+Epoch 8/50, Loss: 1.0026
+Epoch 9/50, Loss: 1.0022
+Epoch 10/50, Loss: 1.0018
+Epoch 11/50, Loss: 1.0014
+Epoch 12/50, Loss: 1.0011
+Epoch 13/50, Loss: 1.0008
+Epoch 14/50, Loss: 1.0004
+Epoch 15/50, Loss: 1.0001
+Epoch 16/50, Loss: 0.9997
+Epoch 17/50, Loss: 0.9994
+Epoch 18/50, Loss: 0.9991
+Epoch 19/50, Loss: 0.9988
+Epoch 20/50, Loss: 0.9984
+Epoch 21/50, Loss: 0.9981
+Epoch 22/50, Loss: 0.9978
+Epoch 23/50, Loss: 0.9975
+Epoch 24/50, Loss: 0.9973
+Epoch 25/50, Loss: 0.9970
+Epoch 26/50, Loss: 0.9967
+Epoch 27/50, Loss: 0.9965
+Epoch 28/50, Loss: 0.9963
+Epoch 29/50, Loss: 0.9960
+Epoch 30/50, Loss: 0.9958
+Epoch 31/50, Loss: 0.9956
+Epoch 32/50, Loss: 0.9954
+Epoch 33/50, Loss: 0.9952
+Epoch 34/50, Loss: 0.9951
+Epoch 35/50, Loss: 0.9949
+Epoch 36/50, Loss: 0.9948
+Epoch 37/50, Loss: 0.9946
+Epoch 38/50, Loss: 0.9945
+Epoch 39/50, Loss: 0.9944
+Epoch 40/50, Loss: 0.9942
+Epoch 41/50, Loss: 0.9941
+Epoch 42/50, Loss: 0.9940
+Epoch 43/50, Loss: 0.9939
+Epoch 44/50, Loss: 0.9939
+Epoch 45/50, Loss: 0.9938
+Epoch 46/50, Loss: 0.9937
+Epoch 47/50, Loss: 0.9936
+Epoch 48/50, Loss: 0.9936
+Epoch 49/50, Loss: 0.9935
+Epoch 50/50, Loss: 0.9934
+
+
+
+MSE: 1.0332502126693726
+MAE: 0.7485922574996948
+MAPE: 1.1084606647491455
+RMSE: 1.0164891601337285
+
+
+
+----------------------------------------
+Encoder Type: SAGE
+Epoch 1/50, Loss: 1.0067
+Epoch 2/50, Loss: 1.0057
+Epoch 3/50, Loss: 1.0048
+Epoch 4/50, Loss: 1.0039
+Epoch 5/50, Loss: 1.0028
+Epoch 6/50, Loss: 1.0016
+Epoch 7/50, Loss: 1.0001
+Epoch 8/50, Loss: 0.9982
+Epoch 9/50, Loss: 0.9960
+Epoch 10/50, Loss: 0.9933
+Epoch 11/50, Loss: 0.9901
+Epoch 12/50, Loss: 0.9863
+Epoch 13/50, Loss: 0.9817
+Epoch 14/50, Loss: 0.9762
+Epoch 15/50, Loss: 0.9697
+Epoch 16/50, Loss: 0.9621
+Epoch 17/50, Loss: 0.9535
+Epoch 18/50, Loss: 0.9438
+Epoch 19/50, Loss: 0.9329
+Epoch 20/50, Loss: 0.9211
+Epoch 21/50, Loss: 0.9085
+Epoch 22/50, Loss: 0.8955
+Epoch 23/50, Loss: 0.8824
+Epoch 24/50, Loss: 0.8693
+Epoch 25/50, Loss: 0.8562
+Epoch 26/50, Loss: 0.8430
+Epoch 27/50, Loss: 0.8292
+Epoch 28/50, Loss: 0.8143
+Epoch 29/50, Loss: 0.7986
+Epoch 30/50, Loss: 0.7827
+Epoch 31/50, Loss: 0.7678
+Epoch 32/50, Loss: 0.7538
+Epoch 33/50, Loss: 0.7395
+Epoch 34/50, Loss: 0.7245
+Epoch 35/50, Loss: 0.7090
+Epoch 36/50, Loss: 0.6937
+Epoch 37/50, Loss: 0.6790
+Epoch 38/50, Loss: 0.6649
+Epoch 39/50, Loss: 0.6508
+Epoch 40/50, Loss: 0.6371
+Epoch 41/50, Loss: 0.6236
+Epoch 42/50, Loss: 0.6104
+Epoch 43/50, Loss: 0.5975
+Epoch 44/50, Loss: 0.5850
+Epoch 45/50, Loss: 0.5728
+Epoch 46/50, Loss: 0.5610
+Epoch 47/50, Loss: 0.5495
+Epoch 48/50, Loss: 0.5383
+Epoch 49/50, Loss: 0.5277
+Epoch 50/50, Loss: 0.5176
+
+
+
+MSE: 0.5317262411117554
+MAE: 0.4935258626937866
+MAPE: 2.302818536758423
+RMSE: 0.7291956123782941
+
+
+
+----------------------------------------
+Encoder Type: General
+Epoch 1/50, Loss: 1.0054
+Epoch 2/50, Loss: 1.0042
+Epoch 3/50, Loss: 1.0030
+Epoch 4/50, Loss: 1.0016
+Epoch 5/50, Loss: 1.0000
+Epoch 6/50, Loss: 0.9981
+Epoch 7/50, Loss: 0.9958
+Epoch 8/50, Loss: 0.9931
+Epoch 9/50, Loss: 0.9900
+Epoch 10/50, Loss: 0.9865
+Epoch 11/50, Loss: 0.9822
+Epoch 12/50, Loss: 0.9770
+Epoch 13/50, Loss: 0.9709
+Epoch 14/50, Loss: 0.9640
+Epoch 15/50, Loss: 0.9560
+Epoch 16/50, Loss: 0.9469
+Epoch 17/50, Loss: 0.9369
+Epoch 18/50, Loss: 0.9260
+Epoch 19/50, Loss: 0.9147
+Epoch 20/50, Loss: 0.9032
+Epoch 21/50, Loss: 0.8915
+Epoch 22/50, Loss: 0.8797
+Epoch 23/50, Loss: 0.8677
+Epoch 24/50, Loss: 0.8557
+Epoch 25/50, Loss: 0.8439
+Epoch 26/50, Loss: 0.8323
+Epoch 27/50, Loss: 0.8206
+Epoch 28/50, Loss: 0.8080
+Epoch 29/50, Loss: 0.7945
+Epoch 30/50, Loss: 0.7803
+Epoch 31/50, Loss: 0.7661
+Epoch 32/50, Loss: 0.7521
+Epoch 33/50, Loss: 0.7385
+Epoch 34/50, Loss: 0.7249
+Epoch 35/50, Loss: 0.7113
+Epoch 36/50, Loss: 0.6974
+Epoch 37/50, Loss: 0.6834
+Epoch 38/50, Loss: 0.6700
+Epoch 39/50, Loss: 0.6569
+Epoch 40/50, Loss: 0.6445
+Epoch 41/50, Loss: 0.6316
+Epoch 42/50, Loss: 0.6194
+Epoch 43/50, Loss: 0.6072
+Epoch 44/50, Loss: 0.5964
+Epoch 45/50, Loss: 0.5845
+Epoch 46/50, Loss: 0.5729
+Epoch 47/50, Loss: 0.5610
+Epoch 48/50, Loss: 0.5501
+Epoch 49/50, Loss: 0.5396
+Epoch 50/50, Loss: 0.5295
+
+
+
+MSE: 0.6024320125579834
+MAE: 0.515606701374054
+MAPE: 2.3629910945892334
+RMSE: 0.7761649390161754
+
+
+
+----------------------------------------
+Encoder Type: Transformer
+Epoch 1/50, Loss: 1.0061
+Epoch 2/50, Loss: 1.0050
+Epoch 3/50, Loss: 1.0040
+Epoch 4/50, Loss: 1.0030
+Epoch 5/50, Loss: 1.0019
+Epoch 6/50, Loss: 1.0007
+Epoch 7/50, Loss: 0.9991
+Epoch 8/50, Loss: 0.9972
+Epoch 9/50, Loss: 0.9948
+Epoch 10/50, Loss: 0.9920
+Epoch 11/50, Loss: 0.9886
+Epoch 12/50, Loss: 0.9844
+Epoch 13/50, Loss: 0.9794
+Epoch 14/50, Loss: 0.9734
+Epoch 15/50, Loss: 0.9662
+Epoch 16/50, Loss: 0.9579
+Epoch 17/50, Loss: 0.9482
+Epoch 18/50, Loss: 0.9372
+Epoch 19/50, Loss: 0.9251
+Epoch 20/50, Loss: 0.9121
+Epoch 21/50, Loss: 0.8985
+Epoch 22/50, Loss: 0.8846
+Epoch 23/50, Loss: 0.8703
+Epoch 24/50, Loss: 0.8559
+Epoch 25/50, Loss: 0.8415
+Epoch 26/50, Loss: 0.8267
+Epoch 27/50, Loss: 0.8113
+Epoch 28/50, Loss: 0.7956
+Epoch 29/50, Loss: 0.7795
+Epoch 30/50, Loss: 0.7632
+Epoch 31/50, Loss: 0.7468
+Epoch 32/50, Loss: 0.7303
+Epoch 33/50, Loss: 0.7138
+Epoch 34/50, Loss: 0.6976
+Epoch 35/50, Loss: 0.6819
+Epoch 36/50, Loss: 0.6667
+Epoch 37/50, Loss: 0.6518
+Epoch 38/50, Loss: 0.6372
+Epoch 39/50, Loss: 0.6229
+Epoch 40/50, Loss: 0.6090
+Epoch 41/50, Loss: 0.5956
+Epoch 42/50, Loss: 0.5824
+Epoch 43/50, Loss: 0.5695
+Epoch 44/50, Loss: 0.5568
+Epoch 45/50, Loss: 0.5446
+Epoch 46/50, Loss: 0.5328
+Epoch 47/50, Loss: 0.5214
+Epoch 48/50, Loss: 0.5106
+Epoch 49/50, Loss: 0.5002
+Epoch 50/50, Loss: 0.4902
+
+
+
+MSE: 0.5177602171897888
+MAE: 0.47991883754730225
+MAPE: 2.440047025680542
+RMSE: 0.7195555692160188
+
+
+
+----------------------------------------
+----------------------------------------
+
+
+
+METR-LA
+----------------------------------------
+Encoder Type: GAT
+Epoch 1/50, Loss: 0.9325
+Epoch 2/50, Loss: 0.9319
+Epoch 3/50, Loss: 0.9314
+Epoch 4/50, Loss: 0.9309
+Epoch 5/50, Loss: 0.9304
+Epoch 6/50, Loss: 0.9300
+Epoch 7/50, Loss: 0.9296
+Epoch 8/50, Loss: 0.9292
+Epoch 9/50, Loss: 0.9289
+Epoch 10/50, Loss: 0.9285
+Epoch 11/50, Loss: 0.9282
+Epoch 12/50, Loss: 0.9279
+Epoch 13/50, Loss: 0.9275
+Epoch 14/50, Loss: 0.9272
+Epoch 15/50, Loss: 0.9269
+Epoch 16/50, Loss: 0.9266
+Epoch 17/50, Loss: 0.9262
+Epoch 18/50, Loss: 0.9259
+Epoch 19/50, Loss: 0.9256
+Epoch 20/50, Loss: 0.9253
+Epoch 21/50, Loss: 0.9250
+Epoch 22/50, Loss: 0.9247
+Epoch 23/50, Loss: 0.9245
+Epoch 24/50, Loss: 0.9242
+Epoch 25/50, Loss: 0.9239
+Epoch 26/50, Loss: 0.9237
+Epoch 27/50, Loss: 0.9234
+Epoch 28/50, Loss: 0.9232
+Epoch 29/50, Loss: 0.9229
+Epoch 30/50, Loss: 0.9227
+Epoch 31/50, Loss: 0.9225
+Epoch 32/50, Loss: 0.9222
+Epoch 33/50, Loss: 0.9220
+Epoch 34/50, Loss: 0.9219
+Epoch 35/50, Loss: 0.9217
+Epoch 36/50, Loss: 0.9215
+Epoch 37/50, Loss: 0.9213
+Epoch 38/50, Loss: 0.9212
+Epoch 39/50, Loss: 0.9210
+Epoch 40/50, Loss: 0.9209
+Epoch 41/50, Loss: 0.9207
+Epoch 42/50, Loss: 0.9206
+Epoch 43/50, Loss: 0.9205
+Epoch 44/50, Loss: 0.9203
+Epoch 45/50, Loss: 0.9202
+Epoch 46/50, Loss: 0.9201
+Epoch 47/50, Loss: 0.9200
+Epoch 48/50, Loss: 0.9199
+Epoch 49/50, Loss: 0.9198
+Epoch 50/50, Loss: 0.9197
+
+
+
+MSE: 1.3348288536071777
+MAE: 0.7834133505821228
+MAPE: 1.0970391035079956
+RMSE: 1.1553479361677925
+
+
+
+----------------------------------------
+Encoder Type: SAGE
+Epoch 1/50, Loss: 0.9319
+Epoch 2/50, Loss: 0.9307
+Epoch 3/50, Loss: 0.9297
+Epoch 4/50, Loss: 0.9285
+Epoch 5/50, Loss: 0.9273
+Epoch 6/50, Loss: 0.9258
+Epoch 7/50, Loss: 0.9241
+Epoch 8/50, Loss: 0.9221
+Epoch 9/50, Loss: 0.9197
+Epoch 10/50, Loss: 0.9169
+Epoch 11/50, Loss: 0.9134
+Epoch 12/50, Loss: 0.9093
+Epoch 13/50, Loss: 0.9044
+Epoch 14/50, Loss: 0.8987
+Epoch 15/50, Loss: 0.8919
+Epoch 16/50, Loss: 0.8840
+Epoch 17/50, Loss: 0.8749
+Epoch 18/50, Loss: 0.8646
+Epoch 19/50, Loss: 0.8530
+Epoch 20/50, Loss: 0.8401
+Epoch 21/50, Loss: 0.8260
+Epoch 22/50, Loss: 0.8108
+Epoch 23/50, Loss: 0.7946
+Epoch 24/50, Loss: 0.7771
+Epoch 25/50, Loss: 0.7588
+Epoch 26/50, Loss: 0.7393
+Epoch 27/50, Loss: 0.7188
+Epoch 28/50, Loss: 0.6977
+Epoch 29/50, Loss: 0.6758
+Epoch 30/50, Loss: 0.6536
+Epoch 31/50, Loss: 0.6328
+Epoch 32/50, Loss: 0.6146
+Epoch 33/50, Loss: 0.5996
+Epoch 34/50, Loss: 0.5876
+Epoch 35/50, Loss: 0.5776
+Epoch 36/50, Loss: 0.5659
+Epoch 37/50, Loss: 0.5513
+Epoch 38/50, Loss: 0.5400
+Epoch 39/50, Loss: 0.5290
+Epoch 40/50, Loss: 0.5188
+Epoch 41/50, Loss: 0.5106
+Epoch 42/50, Loss: 0.5017
+Epoch 43/50, Loss: 0.4935
+Epoch 44/50, Loss: 0.4858
+Epoch 45/50, Loss: 0.4779
+Epoch 46/50, Loss: 0.4717
+Epoch 47/50, Loss: 0.4655
+Epoch 48/50, Loss: 0.4596
+Epoch 49/50, Loss: 0.4545
+Epoch 50/50, Loss: 0.4492
+
+
+
+MSE: 0.5445655584335327
+MAE: 0.4763004183769226
+MAPE: 1.6677647829055786
+RMSE: 0.7379468533936118
+
+
+
+----------------------------------------
+Encoder Type: General
+Epoch 1/50, Loss: 0.9302
+Epoch 2/50, Loss: 0.9294
+Epoch 3/50, Loss: 0.9287
+Epoch 4/50, Loss: 0.9280
+Epoch 5/50, Loss: 0.9272
+Epoch 6/50, Loss: 0.9263
+Epoch 7/50, Loss: 0.9253
+Epoch 8/50, Loss: 0.9241
+Epoch 9/50, Loss: 0.9226
+Epoch 10/50, Loss: 0.9208
+Epoch 11/50, Loss: 0.9185
+Epoch 12/50, Loss: 0.9157
+Epoch 13/50, Loss: 0.9123
+Epoch 14/50, Loss: 0.9081
+Epoch 15/50, Loss: 0.9031
+Epoch 16/50, Loss: 0.8970
+Epoch 17/50, Loss: 0.8898
+Epoch 18/50, Loss: 0.8813
+Epoch 19/50, Loss: 0.8715
+Epoch 20/50, Loss: 0.8607
+Epoch 21/50, Loss: 0.8488
+Epoch 22/50, Loss: 0.8359
+Epoch 23/50, Loss: 0.8219
+Epoch 24/50, Loss: 0.8067
+Epoch 25/50, Loss: 0.7903
+Epoch 26/50, Loss: 0.7724
+Epoch 27/50, Loss: 0.7531
+Epoch 28/50, Loss: 0.7327
+Epoch 29/50, Loss: 0.7118
+Epoch 30/50, Loss: 0.6916
+Epoch 31/50, Loss: 0.6736
+Epoch 32/50, Loss: 0.6580
+Epoch 33/50, Loss: 0.6445
+Epoch 34/50, Loss: 0.6325
+Epoch 35/50, Loss: 0.6197
+Epoch 36/50, Loss: 0.6046
+Epoch 37/50, Loss: 0.5942
+Epoch 38/50, Loss: 0.5781
+Epoch 39/50, Loss: 0.5686
+Epoch 40/50, Loss: 0.5571
+Epoch 41/50, Loss: 0.5442
+Epoch 42/50, Loss: 0.5349
+Epoch 43/50, Loss: 0.5251
+Epoch 44/50, Loss: 0.5143
+Epoch 45/50, Loss: 0.5058
+Epoch 46/50, Loss: 0.4978
+Epoch 47/50, Loss: 0.4891
+Epoch 48/50, Loss: 0.4817
+Epoch 49/50, Loss: 0.4755
+Epoch 50/50, Loss: 0.4683
+
+
+
+MSE: 0.5637916922569275
+MAE: 0.5030711889266968
+MAPE: 1.5424854755401611
+RMSE: 0.7508606343769312
+
+
+
+----------------------------------------
+Encoder Type: Transformer
+Epoch 1/50, Loss: 0.9328
+Epoch 2/50, Loss: 0.9314
+Epoch 3/50, Loss: 0.9301
+Epoch 4/50, Loss: 0.9287
+Epoch 5/50, Loss: 0.9271
+Epoch 6/50, Loss: 0.9251
+Epoch 7/50, Loss: 0.9227
+Epoch 8/50, Loss: 0.9197
+Epoch 9/50, Loss: 0.9161
+Epoch 10/50, Loss: 0.9117
+Epoch 11/50, Loss: 0.9064
+Epoch 12/50, Loss: 0.9000
+Epoch 13/50, Loss: 0.8926
+Epoch 14/50, Loss: 0.8839
+Epoch 15/50, Loss: 0.8739
+Epoch 16/50, Loss: 0.8625
+Epoch 17/50, Loss: 0.8497
+Epoch 18/50, Loss: 0.8357
+Epoch 19/50, Loss: 0.8206
+Epoch 20/50, Loss: 0.8044
+Epoch 21/50, Loss: 0.7873
+Epoch 22/50, Loss: 0.7692
+Epoch 23/50, Loss: 0.7501
+Epoch 24/50, Loss: 0.7299
+Epoch 25/50, Loss: 0.7092
+Epoch 26/50, Loss: 0.6884
+Epoch 27/50, Loss: 0.6685
+Epoch 28/50, Loss: 0.6504
+Epoch 29/50, Loss: 0.6348
+Epoch 30/50, Loss: 0.6214
+Epoch 31/50, Loss: 0.6092
+Epoch 32/50, Loss: 0.5970
+Epoch 33/50, Loss: 0.5846
+Epoch 34/50, Loss: 0.5724
+Epoch 35/50, Loss: 0.5604
+Epoch 36/50, Loss: 0.5489
+Epoch 37/50, Loss: 0.5383
+Epoch 38/50, Loss: 0.5287
+Epoch 39/50, Loss: 0.5200
+Epoch 40/50, Loss: 0.5118
+Epoch 41/50, Loss: 0.5038
+Epoch 42/50, Loss: 0.4958
+Epoch 43/50, Loss: 0.4880
+Epoch 44/50, Loss: 0.4807
+Epoch 45/50, Loss: 0.4740
+Epoch 46/50, Loss: 0.4682
+Epoch 47/50, Loss: 0.4628
+Epoch 48/50, Loss: 0.4578
+Epoch 49/50, Loss: 0.4529
+Epoch 50/50, Loss: 0.4482
+
+
+
+MSE: 0.5321565270423889
+MAE: 0.4741092324256897
+MAPE: 1.6008135080337524
+RMSE: 0.7294905942110487
+
+
+
+----------------------------------------
+----------------------------------------
+
+
+
+Chickenpox
+----------------------------------------
+Encoder Type: GAT
+Epoch 1/50, Loss: 1.0672
+Epoch 2/50, Loss: 1.0661
+Epoch 3/50, Loss: 1.0652
+Epoch 4/50, Loss: 1.0643
+Epoch 5/50, Loss: 1.0634
+Epoch 6/50, Loss: 1.0627
+Epoch 7/50, Loss: 1.0619
+Epoch 8/50, Loss: 1.0613
+Epoch 9/50, Loss: 1.0606
+Epoch 10/50, Loss: 1.0600
+Epoch 11/50, Loss: 1.0595
+Epoch 12/50, Loss: 1.0589
+Epoch 13/50, Loss: 1.0584
+Epoch 14/50, Loss: 1.0579
+Epoch 15/50, Loss: 1.0575
+Epoch 16/50, Loss: 1.0570
+Epoch 17/50, Loss: 1.0565
+Epoch 18/50, Loss: 1.0561
+Epoch 19/50, Loss: 1.0556
+Epoch 20/50, Loss: 1.0551
+Epoch 21/50, Loss: 1.0547
+Epoch 22/50, Loss: 1.0543
+Epoch 23/50, Loss: 1.0540
+Epoch 24/50, Loss: 1.0536
+Epoch 25/50, Loss: 1.0532
+Epoch 26/50, Loss: 1.0528
+Epoch 27/50, Loss: 1.0524
+Epoch 28/50, Loss: 1.0520
+Epoch 29/50, Loss: 1.0516
+Epoch 30/50, Loss: 1.0511
+Epoch 31/50, Loss: 1.0507
+Epoch 32/50, Loss: 1.0504
+Epoch 33/50, Loss: 1.0500
+Epoch 34/50, Loss: 1.0497
+Epoch 35/50, Loss: 1.0495
+Epoch 36/50, Loss: 1.0492
+Epoch 37/50, Loss: 1.0489
+Epoch 38/50, Loss: 1.0486
+Epoch 39/50, Loss: 1.0483
+Epoch 40/50, Loss: 1.0480
+Epoch 41/50, Loss: 1.0478
+Epoch 42/50, Loss: 1.0476
+Epoch 43/50, Loss: 1.0473
+Epoch 44/50, Loss: 1.0471
+Epoch 45/50, Loss: 1.0468
+Epoch 46/50, Loss: 1.0465
+Epoch 47/50, Loss: 1.0462
+Epoch 48/50, Loss: 1.0460
+Epoch 49/50, Loss: 1.0457
+Epoch 50/50, Loss: 1.0455
+
+
+
+MSE: 0.8053555488586426
+MAE: 0.7291253805160522
+MAPE: 1.2665067911148071
+RMSE: 0.8974160400052155
+
+
+
+----------------------------------------
+Encoder Type: SAGE
+Epoch 1/50, Loss: 1.0681
+Epoch 2/50, Loss: 1.0664
+Epoch 3/50, Loss: 1.0647
+Epoch 4/50, Loss: 1.0631
+Epoch 5/50, Loss: 1.0614
+Epoch 6/50, Loss: 1.0595
+Epoch 7/50, Loss: 1.0575
+Epoch 8/50, Loss: 1.0553
+Epoch 9/50, Loss: 1.0528
+Epoch 10/50, Loss: 1.0499
+Epoch 11/50, Loss: 1.0464
+Epoch 12/50, Loss: 1.0421
+Epoch 13/50, Loss: 1.0368
+Epoch 14/50, Loss: 1.0305
+Epoch 15/50, Loss: 1.0229
+Epoch 16/50, Loss: 1.0137
+Epoch 17/50, Loss: 1.0027
+Epoch 18/50, Loss: 0.9896
+Epoch 19/50, Loss: 0.9746
+Epoch 20/50, Loss: 0.9572
+Epoch 21/50, Loss: 0.9374
+Epoch 22/50, Loss: 0.9154
+Epoch 23/50, Loss: 0.8918
+Epoch 24/50, Loss: 0.8677
+Epoch 25/50, Loss: 0.8453
+Epoch 26/50, Loss: 0.8268
+Epoch 27/50, Loss: 0.8142
+Epoch 28/50, Loss: 0.8061
+Epoch 29/50, Loss: 0.7972
+Epoch 30/50, Loss: 0.7840
+Epoch 31/50, Loss: 0.7672
+Epoch 32/50, Loss: 0.7501
+Epoch 33/50, Loss: 0.7354
+Epoch 34/50, Loss: 0.7241
+Epoch 35/50, Loss: 0.7150
+Epoch 36/50, Loss: 0.7069
+Epoch 37/50, Loss: 0.6986
+Epoch 38/50, Loss: 0.6897
+Epoch 39/50, Loss: 0.6805
+Epoch 40/50, Loss: 0.6713
+Epoch 41/50, Loss: 0.6629
+Epoch 42/50, Loss: 0.6556
+Epoch 43/50, Loss: 0.6493
+Epoch 44/50, Loss: 0.6441
+Epoch 45/50, Loss: 0.6397
+Epoch 46/50, Loss: 0.6353
+Epoch 47/50, Loss: 0.6309
+Epoch 48/50, Loss: 0.6264
+Epoch 49/50, Loss: 0.6221
+Epoch 50/50, Loss: 0.6184
+
+
+
+MSE: 0.5758713483810425
+MAE: 0.5295104384422302
+MAPE: 2.4220848083496094
+RMSE: 0.7588618770112533
+
+
+
+----------------------------------------
+Encoder Type: General
+Epoch 1/50, Loss: 1.0616
+Epoch 2/50, Loss: 1.0597
+Epoch 3/50, Loss: 1.0579
+Epoch 4/50, Loss: 1.0561
+Epoch 5/50, Loss: 1.0541
+Epoch 6/50, Loss: 1.0518
+Epoch 7/50, Loss: 1.0489
+Epoch 8/50, Loss: 1.0455
+Epoch 9/50, Loss: 1.0413
+Epoch 10/50, Loss: 1.0365
+Epoch 11/50, Loss: 1.0311
+Epoch 12/50, Loss: 1.0250
+Epoch 13/50, Loss: 1.0179
+Epoch 14/50, Loss: 1.0096
+Epoch 15/50, Loss: 0.9997
+Epoch 16/50, Loss: 0.9880
+Epoch 17/50, Loss: 0.9744
+Epoch 18/50, Loss: 0.9586
+Epoch 19/50, Loss: 0.9407
+Epoch 20/50, Loss: 0.9212
+Epoch 21/50, Loss: 0.9007
+Epoch 22/50, Loss: 0.8807
+Epoch 23/50, Loss: 0.8633
+Epoch 24/50, Loss: 0.8503
+Epoch 25/50, Loss: 0.8416
+Epoch 26/50, Loss: 0.8339
+Epoch 27/50, Loss: 0.8231
+Epoch 28/50, Loss: 0.8077
+Epoch 29/50, Loss: 0.7894
+Epoch 30/50, Loss: 0.7707
+Epoch 31/50, Loss: 0.7540
+Epoch 32/50, Loss: 0.7402
+Epoch 33/50, Loss: 0.7299
+Epoch 34/50, Loss: 0.7229
+Epoch 35/50, Loss: 0.7181
+Epoch 36/50, Loss: 0.7141
+Epoch 37/50, Loss: 0.7093
+Epoch 38/50, Loss: 0.7020
+Epoch 39/50, Loss: 0.6927
+Epoch 40/50, Loss: 0.6826
+Epoch 41/50, Loss: 0.6735
+Epoch 42/50, Loss: 0.6661
+Epoch 43/50, Loss: 0.6606
+Epoch 44/50, Loss: 0.6562
+Epoch 45/50, Loss: 0.6518
+Epoch 46/50, Loss: 0.6471
+Epoch 47/50, Loss: 0.6420
+Epoch 48/50, Loss: 0.6370
+Epoch 49/50, Loss: 0.6322
+Epoch 50/50, Loss: 0.6278
+
+
+
+MSE: 0.5764731764793396
+MAE: 0.5369202494621277
+MAPE: 2.2738077640533447
+RMSE: 0.7592583068227436
+
+
+
+----------------------------------------
+Encoder Type: Transformer
+Epoch 1/50, Loss: 1.0673
+Epoch 2/50, Loss: 1.0650
+Epoch 3/50, Loss: 1.0628
+Epoch 4/50, Loss: 1.0609
+Epoch 5/50, Loss: 1.0591
+Epoch 6/50, Loss: 1.0573
+Epoch 7/50, Loss: 1.0553
+Epoch 8/50, Loss: 1.0530
+Epoch 9/50, Loss: 1.0502
+Epoch 10/50, Loss: 1.0468
+Epoch 11/50, Loss: 1.0427
+Epoch 12/50, Loss: 1.0377
+Epoch 13/50, Loss: 1.0313
+Epoch 14/50, Loss: 1.0235
+Epoch 15/50, Loss: 1.0139
+Epoch 16/50, Loss: 1.0022
+Epoch 17/50, Loss: 0.9882
+Epoch 18/50, Loss: 0.9716
+Epoch 19/50, Loss: 0.9524
+Epoch 20/50, Loss: 0.9308
+Epoch 21/50, Loss: 0.9074
+Epoch 22/50, Loss: 0.8832
+Epoch 23/50, Loss: 0.8600
+Epoch 24/50, Loss: 0.8405
+Epoch 25/50, Loss: 0.8275
+Epoch 26/50, Loss: 0.8211
+Epoch 27/50, Loss: 0.8162
+Epoch 28/50, Loss: 0.8063
+Epoch 29/50, Loss: 0.7903
+Epoch 30/50, Loss: 0.7714
+Epoch 31/50, Loss: 0.7538
+Epoch 32/50, Loss: 0.7398
+Epoch 33/50, Loss: 0.7306
+Epoch 34/50, Loss: 0.7258
+Epoch 35/50, Loss: 0.7241
+Epoch 36/50, Loss: 0.7229
+Epoch 37/50, Loss: 0.7197
+Epoch 38/50, Loss: 0.7137
+Epoch 39/50, Loss: 0.7057
+Epoch 40/50, Loss: 0.6971
+Epoch 41/50, Loss: 0.6888
+Epoch 42/50, Loss: 0.6825
+Epoch 43/50, Loss: 0.6779
+Epoch 44/50, Loss: 0.6741
+Epoch 45/50, Loss: 0.6703
+Epoch 46/50, Loss: 0.6656
+Epoch 47/50, Loss: 0.6601
+Epoch 48/50, Loss: 0.6543
+Epoch 49/50, Loss: 0.6485
+Epoch 50/50, Loss: 0.6430
+
+
+
+MSE: 0.5807172060012817
+MAE: 0.549993634223938
+MAPE: 2.1885826587677
+RMSE: 0.7620480339199635
+
+
+
